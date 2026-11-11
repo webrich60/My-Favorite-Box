@@ -7,8 +7,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
-<meta name="app-version" content="1.1.7">
-<title>お気に入りボックス | My Favorites</title>
+<meta name="app-version" content="1.2.1">
+<title>お気に入りボックス v1.2.1 | My Favorites</title>
 <style>
   :root{
     color-scheme:light;
@@ -33,6 +33,13 @@
   .brand-lockup{display:flex;align-items:center;gap:16px}
   .brand-mark{width:106px;height:88px;display:grid;place-items:center;flex:none;}
   .brand-mark img{display:block;width:100%;height:100%;object-fit:contain;filter:drop-shadow(0 4px 3px rgba(5,27,40,.13))}
+  /* Current release number, shown prominently so an old cached app is obvious. */
+  .version-label{display:inline-block;margin-top:9px;padding:4px 11px;border-radius:999px;background:#fff;color:#143d59;border:2px solid #d9e8f4;font-size:13px;font-weight:900;letter-spacing:.02em;line-height:1.5}
+  .version-label strong{font-variant-numeric:tabular-nums}
+  .version-footer{font-weight:900;color:#153d5b;font-size:13px}
+  .reload-note{font-size:12px;color:#244a67;font-weight:750;padding:8px 0}
+  #refreshApp{min-height:44px;border-color:#557f9f}
+
   .eyebrow{margin:0 0 2px;font-size:11px;letter-spacing:.20em;text-transform:uppercase;color:#bcd9e8;font-weight:800}
   h1{margin:0;font-size:clamp(22px,3vw,29px);font-weight:850;line-height:1.32;letter-spacing:.025em}
   .hero-desc{margin:7px 0 0;color:#d5e7f1;font-size:13px;font-weight:550}
@@ -181,10 +188,19 @@
   .sheet-message.error{color:#a12632}
   .sheet-code-row{display:flex;gap:9px;align-items:stretch}
   .sheet-code-row input{flex:1;min-width:0}
-  .sheet-code-row .btn{min-width:84px}
+  .sheet-code-row .btn{min-width:157px;padding:9px 12px;background:#eaf3fa;border-color:#597f9d;color:#153954;white-space:nowrap;font-size:14px;gap:7px}
+  .sheet-code-row .btn:hover{background:#d7eaf7;border-color:#214f73}
+  .sheet-code-row .btn[aria-pressed="true"]{background:#173b5d;border-color:#173b5d;color:#fff}
+  .sheet-code-row .btn svg{width:19px;height:19px;flex:none}
+  @media(max-width:480px){.sheet-code-row .btn{min-width:129px;font-size:13px;padding:9px 8px}.sheet-code-row{gap:7px}}
   .sheet-code-note{font-size:12px;font-weight:750;color:#304b63;margin:5px 0 0}
   .sheet-details input[type=password]{letter-spacing:.08em}
-  @media(max-width:600px){.sheet-panel summary{font-size:15px}.sync-state{font-size:12px}.sheet-details .row>.btn{flex:1}}
+  /* One button per row in every viewport. Horizontal text cannot be crushed. */
+  .sheet-actions{display:flex;flex-direction:column;align-items:stretch;gap:10px;margin:16px 0 12px;width:100%}
+  .sheet-actions>.btn{display:flex!important;flex:0 0 auto!important;width:100%!important;min-width:0!important;max-width:100%!important;min-height:51px;padding:12px 14px!important;white-space:nowrap!important;word-break:normal!important;overflow-wrap:normal!important;writing-mode:horizontal-tb!important;text-orientation:mixed!important;font-size:clamp(14px,3.75vw,16px);line-height:1.45;text-align:center;box-sizing:border-box}
+  .sheet-actions>.btn:first-child{width:100%!important}
+  .sheet-action-help{font-weight:800;font-size:13px;color:#2b4b64}
+  @media(max-width:600px){.sheet-panel summary{font-size:15px}.sync-state{font-size:12px}}
   /* Additional categories: high-contrast, clear tap targets */
   .category-input-row{display:flex;gap:10px;align-items:stretch}
   .category-input-row>select{appearance:auto;cursor:pointer;font-weight:800;font-size:15px;border:2px solid #6e8da9;background:#fff;color:#112c45;min-height:49px}
@@ -215,6 +231,7 @@
           <div>
             <p class="eyebrow">MY FAVORITES</p>
             <h1>お気に入りボックス</h1>
+            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>1.2.1</strong></span>
           </div>
         </div>
         <p class="hero-desc">お気に入りの動画・投稿・Webサイトを、ひとつの場所に。</p>
@@ -317,12 +334,12 @@
           <label for="sheetKey">GAS連携の合言葉 <span class="optional">半角英数字6～32文字・初回のみ</span></label>
           <div class="sheet-code-row">
             <input id="sheetKey" type="password" autocomplete="off" spellcheck="false" minlength="6" maxlength="32" placeholder="GASで設定した合言葉" aria-describedby="sheetKeyNote">
-            <button class="btn" id="sheetKeyToggle" type="button" aria-pressed="false">表示</button>
+            <button class="btn sheet-code-toggle" id="sheetKeyToggle" type="button" aria-pressed="false" aria-label="アクセスコードを表示" title="入力したアクセスコードを表示します"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span id="sheetKeyToggleText">コードを表示</span></button>
           </div>
-          <div id="sheetKeyNote" class="sheet-code-note">アプリを開くためのコードではありません。GASと同じ文字を一度だけ入力します。</div>
+          <div id="sheetKeyNote" class="sheet-code-note">アプリを開くためのコードではありません。GASと同じ文字を一度だけ入力します。右の「コードを表示」で入力内容を確認できます。</div>
         </div>
       </div>
-      <div class="row">
+      <div class="sheet-actions">
         <button class="btn primary" type="button" id="sheetSave">連携設定を保存</button>
         <button class="btn" type="button" id="sheetTest">接続テスト</button>
         <button class="btn" type="button" id="sheetAll">既存のURLを一括転記</button>
@@ -330,6 +347,8 @@
         <button class="btn" type="button" id="sheetTitles">仮タイトルをまとめて取得</button>
       </div>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
+      <div class="reload-note">画面上部に「v1.2.1」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
+      <button class="btn sm" id="refreshApp" type="button">↻ 最新の画面を読み直す</button>
       <p class="sync-help">※ 同梱GASの「スクリプト プロパティ」に合言葉を設定し、同じ文字を上欄へ入力してください。毎回の入力は不要です。旧GASは最新版へ更新してください。送信失敗分は再送できます。なお6文字は簡易保護のため、重要情報の保存や第三者へのGAS URLの公開は避けてください。</p>
     </div>
   </details>
@@ -337,7 +356,7 @@
   <div class="list-heading"><h2>保存したお気に入り</h2><span id="visibleCount">0件表示</span></div>
   <div id="list" class="list"></div>
   <div id="empty" class="empty" style="display:none"></div>
-  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション</footer>
+  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v1.2.1</span></footer>
 </div>
 
 <!-- dialogs -->
@@ -572,13 +591,111 @@ const incomingShare=(()=>{
   return result;
 })();
 
+/* ---------- resilient on-device persistence ---------- */
+// Existing keys are intentionally unchanged; never clear saved links on upgrade.
+// Try IndexedDB, localStorage and (when permitted) CacheStorage, with read-back verification.
+const FAV_STORE_DB = "favbox-local-v1";
+const FAV_CACHE_DATA = "favbox-data-" + location.pathname.split("/").filter(Boolean)[0];
+let favDbPromise=null;
+const favBackendOverrides = new Map();
+function favOpenDb(){
+  if(favDbPromise)return favDbPromise;
+  favDbPromise=new Promise((resolve,reject)=>{
+    if(!("indexedDB" in window) || !window.indexedDB){reject(new Error("IndexedDBを利用できません"));return;}
+    let settled=false;
+    try{
+      const request=indexedDB.open(FAV_STORE_DB,1);
+      const fail=err=>{if(!settled){settled=true;reject(err instanceof Error?err:new Error(String(err||"保存先を開けません")));}};
+      request.onupgradeneeded=()=>{if(!request.result.objectStoreNames.contains("entries"))request.result.createObjectStore("entries");};
+      request.onsuccess=()=>{if(!settled){settled=true;resolve(request.result);}else request.result.close();};
+      request.onerror=()=>fail(request.error);
+      request.onblocked=()=>fail(new Error("別のタブが保存先を使用しています"));
+    }catch(e){fail(e);}
+  }).catch(e=>{favDbPromise=null;throw e;});
+  return favDbPromise;
+}
+async function favDbGet(key){
+  const db=await favOpenDb();
+  return new Promise((resolve,reject)=>{
+    try{
+      const req=db.transaction("entries","readonly").objectStore("entries").get(key);
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error||new Error("読み込み失敗"));
+    }catch(e){reject(e);}
+  });
+}
+async function favDbPut(key,value){
+  const db=await favOpenDb();
+  return new Promise((resolve,reject)=>{
+    try{
+      const tx=db.transaction("entries","readwrite");
+      tx.objectStore("entries").put(value,key);
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error||new Error("保存失敗"));
+      tx.onabort=()=>reject(tx.error||new Error("保存が中断されました"));
+    }catch(e){reject(e);}
+  });
+}
+function favCacheUrl(key){return new URL('./.favbox-private/'+encodeURIComponent(key),location.href).href;}
+async function favCacheGet(key){
+  if(!('caches' in window))return null;
+  const cache=await caches.open(FAV_CACHE_DATA);
+  const response=await cache.match(favCacheUrl(key));
+  return response?response.text():null;
+}
+async function favCachePut(key,value){
+  if(!('caches' in window))throw new Error('CacheStorageが使えません');
+  const cache=await caches.open(FAV_CACHE_DATA);
+  await cache.put(favCacheUrl(key),new Response(value,{headers:{'content-type':'text/plain;charset=UTF-8'}}));
+}
+async function favRead(key){
+  const preferred=favBackendOverrides.get(key);
+  if(preferred==='localStorage')try{return localStorage.getItem(key);}catch(_){/* try other */}
+  if(preferred==='CacheStorage')try{const v=await favCacheGet(key);if(v!==null)return v;}catch(_){/* try other */}
+  if(preferred==='IndexedDB')try{const v=await favDbGet(key);if(v!==undefined&&v!==null)return v;}catch(_){/* try other */}
+  try{const v=await favDbGet(key);if(v!==undefined&&v!==null)return v;}catch(_){}
+  try{const v=localStorage.getItem(key);if(v!==null)return v;}catch(_){}
+  try{return await favCacheGet(key);}catch(_){return null;}
+}
+async function favWrite(key,value){
+  const problems=[];
+  try{
+    await favDbPut(key,value);
+    if((await favDbGet(key))!==value)throw new Error('保存直後の読み戻しに失敗しました');
+    favBackendOverrides.set(key,'IndexedDB');
+    try{localStorage.setItem(key,value);}catch(_){}
+    try{await favCachePut(key,value);}catch(_){}
+    return 'IndexedDB';
+  }catch(e){problems.push('IndexedDB: '+(e&&e.name||'利用不可'));}
+  try{
+    localStorage.setItem(key,value);
+    if(localStorage.getItem(key)!==value)throw new Error('読み戻し不可');
+    favBackendOverrides.set(key,'localStorage');
+    try{await favCachePut(key,value);}catch(_){}
+    return 'localStorage';
+  }catch(e){problems.push('localStorage: '+(e&&e.name||'利用不可'));}
+  try{
+    await favCachePut(key,value);
+    if((await favCacheGet(key))!==value)throw new Error('読み戻し不可');
+    favBackendOverrides.set(key,'CacheStorage');
+    return 'CacheStorage';
+  }catch(e){problems.push('CacheStorage: '+(e&&e.name||'利用不可'));}
+  throw new Error('端末側で保存がブロックされました（'+problems.join(' / ')+'）。Chromeの通常タブで公開URLを開いてください。');
+}
+async function favStorageCheck(){
+  const token=String(Date.now())+String(Math.random());
+  const store=await favWrite('favbox.storage.check.v1',token);
+  if(await favRead('favbox.storage.check.v1')!==token)throw new Error('保存先の読み戻しができませんでした');
+  return store;
+}
+
 /* ---------- storage ---------- */
 let items = [];            // array of {id,url,key,platform,title,memo,category,autoCat,createdAt}
 let db = null, col = null, mode = "loading";
 const LS_KEY = "favbox.items.v1";
 
-function lsLoad(){ try{ return JSON.parse(localStorage.getItem(LS_KEY)||"[]"); }catch(e){ return []; } }
-function lsSave(){ try{ localStorage.setItem(LS_KEY, JSON.stringify(items)); }catch(e){} }
+async function lsLoad(){try{return JSON.parse(await favRead(LS_KEY)||"[]");}catch(e){return [];}}
+async function lsSave(){await favWrite(LS_KEY,JSON.stringify(items));}
 
 const statusEl = document.getElementById("saveStatus");
 function setStatus(t, bad){ statusEl.textContent = t; statusEl.classList.toggle("bad", !!bad); }
@@ -590,17 +707,18 @@ async function saveItem(it){
       if(e && e.code === "unavailable"){ await new Promise(r=>setTimeout(r, 600+Math.random()*600)); await col.doc(it.id).set(it); }
       else throw e;
     }
-  } else { lsSave(); }
+  } else { await lsSave(); }
 }
 async function removeItem(id){
   if(mode === "db") await col.doc(id).delete();
-  else lsSave();
+  else await lsSave();
 }
 
-function startLocal(note){
+async function startLocal(note){
   mode = "local";
-  items = lsLoad();
-  setStatus(note, false);
+  items = await lsLoad();
+  try{const store=await favStorageCheck();setStatus(note+"（保存先："+store+"）",false);}
+  catch(e){setStatus("⚠ 端末内保存が使えません："+e.message,true);}
   render();
   handleIncomingShare();
 }
@@ -609,11 +727,11 @@ async function init(){
   render();
   let timer = setTimeout(()=>{ if(mode==="loading") setStatus("保存先に接続中です…（時間がかかっています）", true); }, 10000);
   try{
-    if(!window.claude || !window.claude.use){ clearTimeout(timer); startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）"); return; }
+    if(!window.claude || !window.claude.use){ clearTimeout(timer); await startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）"); return; }
     db = await window.claude.use("db");
     const user = await window.claude.use("user");
     const uid = user ? await user.id() : null;
-    if(!db || !uid){ clearTimeout(timer); startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）"); return; }
+    if(!db || !uid){ clearTimeout(timer); await startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）"); return; }
     col = db.collection("data/users/" + uid);
     mode = "db";
     col.onSnapshot(snap => {
@@ -627,7 +745,7 @@ async function init(){
     });
   }catch(e){
     clearTimeout(timer);
-    startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）");
+    await startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）");
   }
 }
 
@@ -658,9 +776,9 @@ function allCategories(){
   items.forEach(i => i.category && set.add(i.category));
   return [...set];
 }
-function loadCustomCategories(){
+async function loadCustomCategories(){
   try{
-    const read=JSON.parse(localStorage.getItem(CUSTOM_CATS_KEY)||"[]");
+    const read=JSON.parse(await favRead(CUSTOM_CATS_KEY)||"[]");
     if(!Array.isArray(read))return;
     for(const value of read){
       const name=normalizedCat(value);
@@ -668,10 +786,10 @@ function loadCustomCategories(){
     }
   }catch(e){}
 }
-function persistCustomCategories(){
-  try{localStorage.setItem(CUSTOM_CATS_KEY,JSON.stringify(customCats));return true;}catch(e){return false;}
+async function persistCustomCategories(){
+  try{await favWrite(CUSTOM_CATS_KEY,JSON.stringify(customCats));return true;}catch(e){return false;}
 }
-function addCustomCategory(value){
+async function addCustomCategory(value){
   const name=normalizedCat(value);
   if(!name)return {ok:false,message:"カテゴリ名を入力してください。"};
   if(name.length>30 || /[\x00-\x1f]/.test(name))return {ok:false,message:"カテゴリ名は30文字以内で入力してください。"};
@@ -679,15 +797,15 @@ function addCustomCategory(value){
   if(existing)return {ok:true,name:existing,existing:true};
   if(customCats.length>=MAX_CUSTOM_CATS)return {ok:false,message:"追加カテゴリは100件までです。"};
   customCats.push(name);
-  if(!persistCustomCategories()){
+  if(!await persistCustomCategories()){
     customCats.pop();
     return {ok:false,message:"カテゴリを保存できませんでした。ブラウザの保存領域をご確認ください。"};
   }
   return {ok:true,name,existing:false};
 }
-function registerTypedCategory(value){
+async function registerTypedCategory(value){
   const name=normalizedCat(value);
-  if(name)addCustomCategory(name);
+  if(name)await addCustomCategory(name);
 }
 function setCatDialogStatus(message,bad){const el=$("catDialogStatus");el.textContent=message;el.classList.toggle("bad",!!bad);}
 function showCustomCategories(){
@@ -707,8 +825,8 @@ function openCategoryManager(field){
 }
 $("addCatBtn").addEventListener("click",()=>openCategoryManager("fCat"));
 $("eManageCats").addEventListener("click",()=>openCategoryManager("eCat"));
-$("saveNewCat").addEventListener("click",()=>{
-  const result=addCustomCategory($("newCatName").value);
+$("saveNewCat").addEventListener("click",async()=>{
+  const result=await addCustomCategory($("newCatName").value);
   if(!result.ok){setCatDialogStatus(result.message,true);return;}
   render(); // update both native select menus before choosing a new option
   $(categoryReturnField).value=result.name;
@@ -718,12 +836,12 @@ $("saveNewCat").addEventListener("click",()=>{
   setCatDialogStatus(result.existing?"そのカテゴリは登録済みです。選択しました。":"「"+result.name+"」を追加し、選択しました。",false);
 });
 $("newCatName").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("saveNewCat").click();}});
-$("customCatList").addEventListener("click",e=>{
+$("customCatList").addEventListener("click",async e=>{
   const button=e.target.closest("[data-cat-delete]");if(!button || button.disabled)return;
   const name=button.dataset.catDelete;
   if(items.some(i=>i.category===name)){setCatDialogStatus("使用中のカテゴリは削除できません。",true);return;}
   const original=customCats.slice();customCats=customCats.filter(c=>c!==name);
-  if(!persistCustomCategories()){customCats=original;setCatDialogStatus("削除内容を保存できませんでした。",true);return;}
+  if(!await persistCustomCategories()){customCats=original;setCatDialogStatus("削除内容を保存できませんでした。Chromeで直接開いてください。",true);return;}
   showCustomCategories();render();setCatDialogStatus("カテゴリ「"+name+"」を削除しました。",false);
 });
 
@@ -793,9 +911,9 @@ async function addFavoriteByUrl(rawUrl, options={}){
   if(mode==="local")items.push(it);
   try{
     await saveItem(it);
-    registerTypedCategory(it.category);
+    await registerTypedCategory(it.category);
     if(mode==="local")render();
-    queueSheetChange("upsert",it);
+    await queueSheetChange("upsert",it);
     if(!supplied) enrichStoredTitle(it).catch(()=>{});
     return {status:"saved",item:it};
   }catch(err){
@@ -861,7 +979,7 @@ $("installApp").addEventListener("click",async()=>{
 });
 window.addEventListener("appinstalled",()=>{$("installApp").hidden=true;});
 if("serviceWorker" in navigator && location.protocol==="https:"){
-  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js",{scope:"./"}).catch(()=>{}));
+  window.addEventListener("load",()=>navigator.serviceWorker.register("./sw.js",{scope:"./",updateViaCache:"none"}).then(r=>r.update()).catch(()=>{}));
 }
 
 /* ---------- filters / render ---------- */
@@ -952,16 +1070,18 @@ $("eSave").addEventListener("click", async ()=>{
   const auto = autoCategory([$("eTitle").value,$("eMemo").value,editing.url].join(" "));
   const upd = Object.assign({}, editing, {title:$("eTitle").value.trim(), memo:$("eMemo").value.trim(), category:$("eCat").value.trim()||auto});
   upd.autoCat = upd.category === auto;
+  const previous=items.find(i=>i.id===upd.id);
   if(mode==="local"){ const k=items.findIndex(i=>i.id===upd.id); items[k]=upd; }
-  try{ await saveItem(upd); registerTypedCategory(upd.category); closeOv($("editOv")); toast("保存しました"); if(mode==="local") render(); queueSheetChange("upsert", upd); }
-  catch(err){ toast("保存できませんでした"); }
+  try{ await saveItem(upd); await registerTypedCategory(upd.category); closeOv($("editOv")); toast("保存しました"); if(mode==="local") render(); await queueSheetChange("upsert", upd); }
+  catch(err){if(mode==="local"&&previous){items=items.map(i=>i.id===upd.id?previous:i);render();} toast("保存できませんでした"); }
 });
 $("delYes").addEventListener("click", async ()=>{
   if(!deleting) return;
   const id = deleting.id;
+  const previousItems=items.slice();
   if(mode==="local") items = items.filter(i=>i.id!==id);
-  try{ await removeItem(id); closeOv($("delOv")); toast("削除しました"); if(mode==="local") render(); queueSheetChange("delete", {id}); }
-  catch(err){ toast("削除できませんでした"); }
+  try{ await removeItem(id); closeOv($("delOv")); toast("削除しました"); if(mode==="local") render(); await queueSheetChange("delete", {id}); }
+  catch(err){if(mode==="local"){items=previousItems;render();} toast("削除できませんでした"); }
 });
 
 /* ---------- backup ---------- */
@@ -983,14 +1103,14 @@ $("bkImport").addEventListener("click", async ()=>{
     backupCats=Array.isArray(parsed.customCategories)?parsed.customCategories:[];
   }catch(e){toast("読み込めない形式です");return;}
   let added=0,skipped=0,catsAdded=0;
-  for(const name of backupCats){const r=addCustomCategory(name);if(r.ok&&!r.existing)catsAdded++;}
+  for(const name of backupCats){const r=await addCustomCategory(name);if(r.ok&&!r.existing)catsAdded++;}
   for(const r of arr){
     const p = parseUrl(r && r.url); if(!p){ skipped++; continue; }
     if(findDup(p.key)){ skipped++; continue; }
     const it = {id:newId(), url:p.href, key:p.key, platform:p.platform, title:String(r.title||""), memo:String(r.memo||""),
       category:String(r.category||autoCategory([r.title,r.memo,p.href].join(" "))), autoCat:!!r.autoCat, createdAt:Number(r.createdAt)||Date.now()};
     items.push(it);
-    try{ await saveItem(it); registerTypedCategory(it.category); added++; queueSheetChange("upsert", it); }catch(e){ skipped++; }
+    try{ await saveItem(it); await registerTypedCategory(it.category); added++; await queueSheetChange("upsert", it); }catch(e){ skipped++; }
   }
   render();
   toast(added+"件 追加 ／ "+skipped+"件 スキップ ／ カテゴリ"+catsAdded+"件追加");
@@ -1005,16 +1125,21 @@ let sheetConfig = {url:"",key:""};
 let sheetQueue = [];
 let sheetRetryTimer = null;
 
-function loadSheetState(){
-  try{const cfg=JSON.parse(localStorage.getItem(SHEET_CONFIG_KEY)||"{}"); sheetConfig={url:String(cfg.url||""),key:String(cfg.key||"")};}catch(e){sheetConfig={url:"",key:""};}
-  try{const q=JSON.parse(localStorage.getItem(SHEET_QUEUE_KEY)||"[]"); sheetQueue=Array.isArray(q)?q.filter(x=>x&&x.opId&&x.action&&x.item):[];}catch(e){sheetQueue=[];}
+async function loadSheetState(){
+  try{const cfg=JSON.parse(await favRead(SHEET_CONFIG_KEY)||"{}"); sheetConfig={url:String(cfg.url||""),key:String(cfg.key||"")};}catch(e){sheetConfig={url:"",key:""};}
+  try{const q=JSON.parse(await favRead(SHEET_QUEUE_KEY)||"[]"); sheetQueue=Array.isArray(q)?q.filter(x=>x&&x.opId&&x.action&&x.item):[];}catch(e){sheetQueue=[];}
   $("sheetUrl").value=sheetConfig.url;
   $("sheetKey").value=sheetConfig.key;
   updateSheetState();
   if(sheetConfigured()) scheduleSheetDrain();
 }
-function storeSheetQueue(){try{localStorage.setItem(SHEET_QUEUE_KEY,JSON.stringify(sheetQueue));return true;}catch(e){return false;}}
-function storeSheetConfig(){try{localStorage.setItem(SHEET_CONFIG_KEY,JSON.stringify(sheetConfig));return true;}catch(e){return false;}}
+async function storeSheetQueue(){try{await favWrite(SHEET_QUEUE_KEY,JSON.stringify(sheetQueue));return true;}catch(e){return false;}}
+async function storeSheetConfig(){
+  const value=JSON.stringify(sheetConfig);
+  const backend=await favWrite(SHEET_CONFIG_KEY,value);
+  if(await favRead(SHEET_CONFIG_KEY)!==value)throw new Error('設定を読み戻せませんでした');
+  return backend;
+}
 function validSheetKey(key){return /^[A-Za-z0-9]{6,32}$/.test(key);}
 function sheetConfigured(){return !!sheetConfig.url&&validSheetKey(sheetConfig.key);}
 function sheetMessage(text,isError){const e=$("sheetMessage");e.textContent=text;e.classList.toggle("error",!!isError);}
@@ -1025,10 +1150,10 @@ function validSheetUrl(url){
   try{const u=new URL(url);return u.protocol==="https:"&&u.hostname==="script.google.com"&&/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(u.pathname);}catch(e){return false;}
 }
 function sheetOpId(){return "op"+Date.now().toString(36)+Math.random().toString(36).slice(2,12);}
-function queueSheetChange(action,item){
+async function queueSheetChange(action,item){
   const entry={opId:sheetOpId(),action,item:action==="delete"?{id:item.id}:JSON.parse(JSON.stringify(item))};
   sheetQueue.push(entry);
-  if(!storeSheetQueue()) sheetMessage("送信待ち情報を保存できません。ブラウザの空き容量をご確認ください。",true);
+  if(!await storeSheetQueue()) {sheetMessage("送信待ち情報を端末に保存できません。Chromeの通常タブで公開URLを開いてください。",true);return;}
   updateSheetState();
   if(sheetConfigured()) scheduleSheetDrain();
 }
@@ -1081,7 +1206,7 @@ async function enrichStoredTitle(item){
   try{
     await saveItem(updated);
     if(mode==="local")render();
-    queueSheetChange("upsert",updated);
+    await queueSheetChange("upsert",updated);
     toast("✓ タイトルを自動取得しました");
   }catch(_){ if(mode==="local"){items=items.map(i=>i.id===current.id?current:i);render();} }
 }
@@ -1111,7 +1236,7 @@ async function refreshExistingTitles(limit=30){
       try{
         if(mode==="local")items=items.map(i=>i.id===original.id?updatedItem:i);
         await saveItem(updatedItem);
-        queueSheetChange("upsert",updatedItem);
+        await queueSheetChange("upsert",updatedItem);
         updated++;
         if(mode==="local")render();
       }catch(e){if(mode==="local"){items=items.map(i=>i.id===original.id?original:i);render();}}
@@ -1145,29 +1270,50 @@ async function drainSheetQueue(){
     while(sheetQueue.length&&sheetConfigured()){
       const head=sheetQueue[0];
       await sendSheetEntry(head);
-      sheetQueue.shift();storeSheetQueue();updateSheetState();
+      sheetQueue.shift();if(!await storeSheetQueue())throw new Error("送信済み記録を端末に保存できません");updateSheetState();
     }
     sheetMessage("✓ Googleスプレッドシートへの転記が完了しました（確認済み）");
   }catch(e){
     sheetMessage("未確認の送信が"+sheetQueue.length+"件あります。設定を確認し「未確認分を再送」を押してください（"+(e&&e.message||"通信エラー")+"）",true);
   }finally{sheetWorking=false;updateSheetState();}
 }
+$("refreshApp").addEventListener("click",()=>{
+  // Query string bypasses stale browser/CDN HTML cache without clearing bookmarks.
+  const u=new URL('./index.html',location.href);
+  u.searchParams.set('app_version','1.2.1');
+  u.searchParams.set('reload',String(Date.now()));
+  location.assign(u.href);
+});
 $("sheetKeyToggle").addEventListener("click",()=>{
   const input=$("sheetKey"),show=input.type==="password";
   input.type=show?"text":"password";
-  $("sheetKeyToggle").textContent=show?"隠す":"表示";
-  $("sheetKeyToggle").setAttribute("aria-pressed",String(show));
+  $("sheetKeyToggleText").textContent=show?"コードを隠す":"コードを表示";
+  const button=$("sheetKeyToggle");
+  button.setAttribute("aria-pressed",String(show));
+  button.setAttribute("aria-label",show?"アクセスコードを隠す":"アクセスコードを表示");
+  button.title=show?"アクセスコードを伏せ字に戻します":"入力したアクセスコードを表示します";
+  button.querySelector("svg").innerHTML=show
+    ? '<path d="m3 3 18 18"/><path d="M10.7 5.6A11.5 11.5 0 0 1 12 5.5c6.5 0 10 6.5 10 6.5a17 17 0 0 1-3.1 3.8M6.3 6.7A17.4 17.4 0 0 0 2 12s3.5 6.5 10 6.5c1.5 0 2.8-.3 4-1"/><path d="M10 10a3 3 0 0 0 4 4"/>'
+    : '<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>';
 });
-$("sheetSave").addEventListener("click",()=>{
+$("sheetSave").addEventListener("click",async()=>{
   const url=$("sheetUrl").value.trim();
   const key=$("sheetKey").value.trim();
   if(!validSheetUrl(url)){sheetMessage("URLはGASのウェブアプリURL（/execで終わるもの）を入力してください。",true);return;}
   if(!validSheetKey(key)){sheetMessage("合言葉は半角英数字6～32文字で設定してください。",true);return;}
+  const previousConfig={...sheetConfig};
   sheetConfig={url,key};
-  if(!storeSheetConfig()){sheetMessage("連携設定を保存できませんでした。ブラウザの保存領域をご確認ください。",true);return;}
-  updateSheetState();sheetMessage("GASのURLと合言葉を保存しました。接続テストを押してください。毎回の入力は不要です。");
+  let savedTo='';
+  try{savedTo=await storeSheetConfig();}
+  catch(e){
+    sheetConfig=previousConfig;updateSheetState();
+    sheetMessage('連携設定の保存に失敗しました：'+(e&&e.message||'原因不明')+'。GitHub Pagesの公開URLをChromeの通常タブで開いてください。',true);
+    return;
+  }
+  updateSheetState();sheetMessage('✓ 設定を保存しました（'+savedTo+'）。次に「接続テスト」を押してください。');
   scheduleSheetDrain();
-  refreshExistingTitles(8);
+  // Do not overwrite a successful save message when there are no placeholder titles.
+  if(items.some(isPlaceholderTitle)) refreshExistingTitles(8);
 });
 $("sheetTest").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先に連携設定を保存してください。",true);return;}
@@ -1175,27 +1321,28 @@ $("sheetTest").addEventListener("click",async()=>{
   try{const result=await jsonpSheetCheck("ping");if(result&&result.ok){sheetMessage("✓ 接続確認OK。合言葉も一致し、スプレッドシートに接続できます。");}else sheetMessage("接続できません："+(result&&result.error||"設定をご確認ください"),true);}
   catch(e){sheetMessage("接続を確認できません（"+e.message+"）。GASのデプロイ設定をご確認ください。",true);}
 });
-$("sheetAll").addEventListener("click",()=>{
+$("sheetAll").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先にGASの連携設定を保存してください。",true);return;}
   if(!items.length){sheetMessage("転記するURLがまだありません。");return;}
   // Upsert by stable ID: repeated imports do not create duplicate rows.
   const already=new Set(sheetQueue.filter(q=>q.action==="upsert").map(q=>q.item.id));
   let n=0;
   for(const item of items){if(already.has(item.id))continue;sheetQueue.push({opId:sheetOpId(),action:"upsert",item:JSON.parse(JSON.stringify(item))});n++;}
-  storeSheetQueue();updateSheetState();sheetMessage(n+"件を転記待ちに登録しました。送信を開始します。");scheduleSheetDrain();
+  if(!await storeSheetQueue()){sheetMessage("送信待ち記録を保存できません。Chromeで通常の公開URLを開いてください。",true);return;}updateSheetState();sheetMessage(n+"件を転記待ちに登録しました。送信を開始します。");scheduleSheetDrain();
 });
 $("sheetRetry").addEventListener("click",()=>{
   if(!sheetConfigured()){sheetMessage("先に連携設定を保存してください。",true);return;}
   if(!sheetQueue.length){sheetMessage("未確認の送信はありません。");return;}
   sheetMessage(sheetQueue.length+"件の再送を開始します。");scheduleSheetDrain();
 });
-loadCustomCategories();
-loadSheetState();
-
 document.querySelectorAll(".jump a[data-ico]").forEach(a => {
   const k=a.dataset.ico; a.insertAdjacentHTML("afterbegin",'<span class="badge b-'+k+'">'+ico(k)+'</span>');
 });
-init();
+(async()=>{
+  await loadCustomCategories();
+  await loadSheetState();
+  await init();
+})().catch(e=>{setStatus("初期化できませんでした。Chromeで公開URLを開き直してください。",true);console.error(e);});
 })();
 </script>
 </body>

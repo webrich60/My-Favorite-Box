@@ -1,20 +1,21 @@
-/* Personal Favorites PWA / GitHub Pages compatible, relative scope */
-const CACHE='favbox-shell-v118';
+/* お気に入りボックス v1.2.1 | GitHub Pages | preserves all user data */
+const CACHE='favbox-shell-v121';
 const SHELL=['./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));
 });
 self.addEventListener('activate',event=>{
-  event.waitUntil(caches.keys().then(names=>Promise.all(names.filter(n=>n.startsWith('favbox-shell-')&&n!==CACHE).map(n=>caches.delete(n)))).then(()=>self.clients.claim()));
+  event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(k=>k.startsWith('favbox-shell-')&&k!==CACHE).map(k=>caches.delete(k)))).then(()=>self.clients.claim()));
 });
 self.addEventListener('fetch',event=>{
-  if(event.request.method!=='GET')return;
-  const u=new URL(event.request.url);
-  if(u.origin!==self.location.origin || !u.pathname.startsWith(new URL(self.registration.scope).pathname))return;
-  if(event.request.mode==='navigate'){
-    // Do not cache query strings containing shared URLs/titles.
-    event.respondWith(fetch(event.request).catch(()=>caches.match('./index.html')));
-  } else {
-    event.respondWith(caches.match(event.request).then(cached=>cached||fetch(event.request)));
+  const request=event.request;
+  if(request.method!=='GET')return;
+  const url=new URL(request.url);
+  if(url.origin!==self.location.origin||!url.pathname.startsWith(new URL(self.registration.scope).pathname))return;
+  if(request.mode==='navigate'){
+    // Browser always checks live HTML first. Offline-only fall back to cached shell.
+    event.respondWith(fetch(request,{cache:'no-store'}).catch(()=>caches.match('./index.html')));
+  }else{
+    event.respondWith(caches.match(request).then(cached=>cached||fetch(request)));
   }
 });
