@@ -7,6 +7,7 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
+<meta name="app-version" content="1.1.7">
 <title>お気に入りボックス | My Favorites</title>
 <style>
   :root{
@@ -66,7 +67,7 @@
   label{display:block;font-weight:850;font-size:14px;margin-bottom:7px;color:#17324d}
   .optional{font-size:11px;font-weight:700;color:#4b6278;margin-left:5px}
   .inputfix{display:block}
-  input[type=text],input[type=url],select,textarea{width:100%;min-height:48px;padding:11px 13px;border:2px solid #8ea7bf;border-radius:11px;background:#fff;transition:border-color .18s,box-shadow .18s;font-weight:600;color:#12283d}
+  input[type=text],input[type=url],input[type=password],select,textarea{width:100%;min-height:48px;padding:11px 13px;border:2px solid #8ea7bf;border-radius:11px;background:#fff;transition:border-color .18s,box-shadow .18s;font-weight:600;color:#12283d}
   input::placeholder,textarea::placeholder{color:#5f7488;opacity:1}
   input:focus,select:focus,textarea:focus{outline:0;border-color:#277ba4;box-shadow:0 0 0 3px rgba(39,123,164,.14)}
   textarea{resize:vertical;min-height:79px}
@@ -178,10 +179,18 @@
   .sheet-details input{font-weight:600}
   .sheet-message{margin-top:10px;font-size:14px;font-weight:800;color:#1e4b66;min-height:20px}
   .sheet-message.error{color:#a12632}
+  .sheet-code-row{display:flex;gap:9px;align-items:stretch}
+  .sheet-code-row input{flex:1;min-width:0}
+  .sheet-code-row .btn{min-width:84px}
+  .sheet-code-note{font-size:12px;font-weight:750;color:#304b63;margin:5px 0 0}
+  .sheet-details input[type=password]{letter-spacing:.08em}
   @media(max-width:600px){.sheet-panel summary{font-size:15px}.sync-state{font-size:12px}.sheet-details .row>.btn{flex:1}}
   /* Additional categories: high-contrast, clear tap targets */
   .category-input-row{display:flex;gap:10px;align-items:stretch}
-  .category-input-row>input{flex:1;min-width:0}
+  .category-input-row>select{appearance:auto;cursor:pointer;font-weight:800;font-size:15px;border:2px solid #6e8da9;background:#fff;color:#112c45;min-height:49px}
+  .category-input-row>select:focus-visible{outline:3px solid #d6e7f5;outline-offset:1px}
+  .category-input-row>select option{color:#142c42;background:#fff}
+  .category-input-row>input,.category-input-row>select{flex:1;min-width:0}
   .cat-manage-btn{flex:none;color:#153a56;background:#eef6fc;border-color:#698aa7;white-space:nowrap;font-size:14px}
   .category-note{color:#2b526c;font-weight:700;font-size:12px}
   .cat-dialog-help{color:#2f4960;font-size:14px;font-weight:750;margin:0 0 15px}
@@ -193,7 +202,7 @@
   .cat-manager-item{display:flex;justify-content:space-between;align-items:center;gap:10px;background:#f6f9fc;border:2px solid #b0c3d3;border-radius:11px;padding:7px 9px 7px 13px;font-size:14px;font-weight:800;overflow-wrap:anywhere}
   .cat-manager-item .btn{flex:none}
   .cat-dialog-footnote{font-size:12px;color:#36526a;font-weight:700;margin:12px 0 0}
-  @media(max-width:600px){.category-input-row{flex-wrap:wrap}.cat-manage-btn{flex:1}.category-input-row>input{min-width:100%}.cat-dialog-help{font-size:13px}}
+  @media(max-width:600px){.category-input-row{flex-wrap:wrap}.cat-manage-btn{flex:1}.category-input-row>input,.category-input-row>select{min-width:100%}.cat-dialog-help{font-size:13px}}
 </style>
 </head>
 <body>
@@ -253,11 +262,10 @@
       <div>
         <label for="fCat">カテゴリ <span class="optional">自動判定・手動変更も可能</span></label>
         <div class="category-input-row">
-          <input id="fCat" type="text" list="catList" placeholder="自動判定またはカテゴリを選択" maxlength="30">
+          <select id="fCat" aria-label="保存先カテゴリ（自動判定または一覧から選択）"><option value="">自動判定</option></select>
           <button class="btn cat-manage-btn" id="addCatBtn" type="button">＋ カテゴリ追加</button>
         </div>
-        <datalist id="catList"></datalist>
-        <div class="catline">判定結果：<span id="autoCat" class="autotag">—</span><span class="category-note">自分でカテゴリを追加して、次回から選択できます</span></div>
+        <div class="catline">自動判定：<span id="autoCat" class="autotag">—</span><span class="category-note">プルダウンから変更できます。新しいカテゴリは「＋ カテゴリ追加」から登録できます。</span></div>
       </div>
       <div class="full">
         <label for="fMemo">メモ <span class="optional">任意</span></label>
@@ -306,9 +314,12 @@
           <input id="sheetUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">
         </div>
         <div class="full">
-          <label for="sheetKey">連携用の合言葉（GASのACCESS_KEYと同じ文字列）</label>
-          <input id="sheetKey" type="password" autocomplete="off" spellcheck="false" placeholder="GASに設定した20文字以上の合言葉">
-          <div class="row" style="margin-top:8px"><label style="display:flex;align-items:center;gap:8px;margin:0;font-size:13px;font-weight:800"><input type="checkbox" id="sheetKeyVisible" style="width:18px;height:18px;accent-color:#1f5a82">合言葉を表示する</label></div>
+          <label for="sheetKey">GAS連携の合言葉 <span class="optional">半角英数字6～32文字・初回のみ</span></label>
+          <div class="sheet-code-row">
+            <input id="sheetKey" type="password" autocomplete="off" spellcheck="false" minlength="6" maxlength="32" placeholder="GASで設定した合言葉" aria-describedby="sheetKeyNote">
+            <button class="btn" id="sheetKeyToggle" type="button" aria-pressed="false">表示</button>
+          </div>
+          <div id="sheetKeyNote" class="sheet-code-note">アプリを開くためのコードではありません。GASと同じ文字を一度だけ入力します。</div>
         </div>
       </div>
       <div class="row">
@@ -316,9 +327,10 @@
         <button class="btn" type="button" id="sheetTest">接続テスト</button>
         <button class="btn" type="button" id="sheetAll">既存のURLを一括転記</button>
         <button class="btn" type="button" id="sheetRetry">未確認分を再送</button>
+        <button class="btn" type="button" id="sheetTitles">仮タイトルをまとめて取得</button>
       </div>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
-      <p class="sync-help">※ 最初に同梱の「GoogleAppsScript.gs」を、ご自身のスプレッドシートの「拡張機能 → Apps Script」に設定してください。連携はこの端末・ブラウザごとに設定します。GASへの送信が未確認の場合は再送できます。スプレッドシートからアプリへの読み込みは行いません。</p>
+      <p class="sync-help">※ 同梱GASの「スクリプト プロパティ」に合言葉を設定し、同じ文字を上欄へ入力してください。毎回の入力は不要です。旧GASは最新版へ更新してください。送信失敗分は再送できます。なお6文字は簡易保護のため、重要情報の保存や第三者へのGAS URLの公開は避けてください。</p>
     </div>
   </details>
 
@@ -349,7 +361,7 @@
     <div style="height:8px"></div>
     <label for="eCat">カテゴリ</label>
     <div class="category-input-row">
-      <input id="eCat" type="text" list="catList" maxlength="30">
+      <select id="eCat" aria-label="カテゴリを選択"></select>
       <button class="btn cat-manage-btn" type="button" id="eManageCats">＋ カテゴリ追加</button>
     </div>
     <div style="height:8px"></div>
@@ -450,7 +462,8 @@ const CATS = [
 const OTHER = "その他";
 
 function autoCategory(text){
-  const t = (text||"").toLowerCase();
+  let t = (text||"").toLowerCase();
+  try{t = decodeURIComponent(t);}catch(_){}
   let best = OTHER, score = 0;
   for(const [name, kws] of CATS){
     let s = 0;
@@ -697,10 +710,11 @@ $("eManageCats").addEventListener("click",()=>openCategoryManager("eCat"));
 $("saveNewCat").addEventListener("click",()=>{
   const result=addCustomCategory($("newCatName").value);
   if(!result.ok){setCatDialogStatus(result.message,true);return;}
+  render(); // update both native select menus before choosing a new option
   $(categoryReturnField).value=result.name;
   if(categoryReturnField==="fCat")catTouched=true;
   $("newCatName").value="";
-  render();showCustomCategories();
+  showCustomCategories();
   setCatDialogStatus(result.existing?"そのカテゴリは登録済みです。選択しました。":"「"+result.name+"」を追加し、選択しました。",false);
 });
 $("newCatName").addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault();$("saveNewCat").click();}});
@@ -721,7 +735,9 @@ function guessText(){ return [fTitle.value, fMemo.value, fUrl.value].join(" "); 
 function refreshAuto(){
   const c = autoCategory(guessText());
   autoCatEl.textContent = c;
-  if(!catTouched) fCat.value = c;
+  const autoOpt=fCat.querySelector('option[value=""]');
+  if(autoOpt) autoOpt.textContent = "自動判定（" + c + "）";
+  if(!catTouched) fCat.value = "";
 }
 function refreshUrlHint(){
   const p = parseUrl(fUrl.value);
@@ -737,7 +753,7 @@ function scheduleTitleLookup(){
   clearTimeout(titleLookupTimer);
   const seq=++titleLookupSerial;
   const p=parseUrl(fUrl.value);
-  if(!p||!sheetConfigured()){ $("titleHelp").textContent=p&&!sheetConfigured()?"GAS設定後はタイトルの自動取得も使えます":"";return; }
+  if(!p||!sheetConfigured()){ $("titleHelp").textContent=p&&!sheetConfigured()?"タイトルの自動取得には下の「Googleスプレッドシート連携」でGASのURLを設定してください":"";return; }
   if(fTitle.value.trim()&&titleFieldEdited)return;
   $("titleHelp").textContent="タイトルを確認中…";$("titleHelp").classList.add("loading");
   titleLookupTimer=setTimeout(async()=>{
@@ -752,7 +768,7 @@ function scheduleTitleLookup(){
 fUrl.addEventListener("input",()=>{titleFieldEdited=false;fTitle.value="";refreshUrlHint();refreshAuto();scheduleTitleLookup();});
 fTitle.addEventListener("input",()=>{titleFieldEdited=true;refreshAuto();});
 fMemo.addEventListener("input", refreshAuto);
-fCat.addEventListener("input", ()=>{ catTouched = fCat.value.trim() !== ""; });
+fCat.addEventListener("change", ()=>{ catTouched = fCat.value !== ""; });
 $("resetBtn").addEventListener("click",()=>{catTouched=false;titleFieldEdited=false;clearTimeout(titleLookupTimer);titleLookupSerial++;$("titleHelp").textContent="";setTimeout(()=>{urlHint.textContent="";autoCatEl.textContent="—";},0);});
 
 function showDup(d){
@@ -792,7 +808,7 @@ $("addForm").addEventListener("submit",async e=>{
   const result=await addFavoriteByUrl(fUrl.value,{title:fTitle.value,memo:fMemo.value,category:catTouched?fCat.value:""});
   if(result.status==="saved"){
     toast("✓ 登録しました（"+result.item.category+"）");
-    e.target.reset();catTouched=false;titleFieldEdited=false;clearTimeout(titleLookupTimer);titleLookupSerial++;urlHint.textContent="";autoCatEl.textContent="—";$("titleHelp").textContent="";$("titleHelp").classList.remove("loading");
+    e.target.reset();catTouched=false;titleFieldEdited=false;clearTimeout(titleLookupTimer);titleLookupSerial++;urlHint.textContent="";autoCatEl.textContent="—";$("titleHelp").textContent="";$("titleHelp").classList.remove("loading");refreshAuto();
   }else if(result.status==="duplicate")showDup(result.item);
   else if(result.status==="loading")toast("読み込み中です。少しして再度お試しください");
   else if(result.status==="invalid"){toast("URLを正しく入力してください");fUrl.focus();}
@@ -860,8 +876,15 @@ function render(){
   $("ytCount").textContent = String(items.filter(i=>i.platform==="youtube").length);
   $("igCount").textContent = String(items.filter(i=>i.platform==="instagram").length);
   $("xCount").textContent = String(items.filter(i=>i.platform==="x").length);
-  // datalist
-  $("catList").innerHTML = allCategories().map(c=>'<option value="'+esc(c)+'">').join("");
+  // Real, mobile-friendly native dropdown menus: auto on create, manual choice on edit.
+  const cats=allCategories();
+  const selectF=$("fCat"), selectE=$("eCat");
+  const prevF=selectF.value, prevE=selectE.value;
+  selectF.innerHTML='<option value="">自動判定（'+esc(autoCategory(guessText()))+'）</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
+  selectE.innerHTML='<option value="">カテゴリを選択</option>'+cats.map(c=>'<option value="'+esc(c)+'">'+esc(c)+'</option>').join('');
+  selectF.value=cats.includes(prevF)?prevF:"";
+  selectE.value=cats.includes(prevE)?prevE:"";
+  if(!selectF.value)catTouched=false;
 
   // platform chips
   const pc = {}; items.forEach(i => pc[i.platform]=(pc[i.platform]||0)+1);
@@ -872,9 +895,9 @@ function render(){
   // category chips (count within platform filter)
   const base = items.filter(i => fPlat==="all" || i.platform===fPlat);
   const cc = {}; base.forEach(i => cc[i.category]=(cc[i.category]||0)+1);
-  if(fCatSel!=="all" && !cc[fCatSel]) fCatSel="all";
+  if(fCatSel!=="all" && !allCategories().includes(fCatSel)) fCatSel="all";
   let h2 = chipHtml("all","すべて",base.length,fCatSel==="all");
-  allCategories().forEach(c => { if(cc[c]) h2 += chipHtml(c, c, cc[c], fCatSel===c); });
+  allCategories().forEach(c => { h2 += chipHtml(c, c, cc[c]||0, fCatSel===c); });
   $("catChips").innerHTML = h2;
 
   // list
@@ -978,7 +1001,7 @@ const SHEET_CONFIG_KEY = "favbox.sheet.config.v1";
 const SHEET_QUEUE_KEY = "favbox.sheet.pending.v1";
 const SHEET_ACK_TIMEOUT_MS = 15000;
 let sheetWorking = false;
-let sheetConfig = {url:"", key:""};
+let sheetConfig = {url:"",key:""};
 let sheetQueue = [];
 let sheetRetryTimer = null;
 
@@ -988,11 +1011,12 @@ function loadSheetState(){
   $("sheetUrl").value=sheetConfig.url;
   $("sheetKey").value=sheetConfig.key;
   updateSheetState();
-  if(sheetConfig.url && sheetConfig.key) scheduleSheetDrain();
+  if(sheetConfigured()) scheduleSheetDrain();
 }
 function storeSheetQueue(){try{localStorage.setItem(SHEET_QUEUE_KEY,JSON.stringify(sheetQueue));return true;}catch(e){return false;}}
 function storeSheetConfig(){try{localStorage.setItem(SHEET_CONFIG_KEY,JSON.stringify(sheetConfig));return true;}catch(e){return false;}}
-function sheetConfigured(){return !!(sheetConfig.url && sheetConfig.key);}
+function validSheetKey(key){return /^[A-Za-z0-9]{6,32}$/.test(key);}
+function sheetConfigured(){return !!sheetConfig.url&&validSheetKey(sheetConfig.key);}
 function sheetMessage(text,isError){const e=$("sheetMessage");e.textContent=text;e.classList.toggle("error",!!isError);}
 function updateSheetState(){
   $("sheetState").textContent=!sheetConfigured()?"未設定":sheetWorking?"送信中":sheetQueue.length?"未確認 "+sheetQueue.length+"件":"連携設定済み";
@@ -1027,10 +1051,11 @@ function jsonpSheetCheck(type,opId="",linkUrl=""){
     const timer=setTimeout(()=>done(new Error("応答がありません")),SHEET_ACK_TIMEOUT_MS);
     const u=new URL(sheetConfig.url);
     u.searchParams.set("mode",type);
-    u.searchParams.set("key",sheetConfig.key);
     u.searchParams.set("callback",callback);
     if(opId)u.searchParams.set("opId",opId);
     if(linkUrl)u.searchParams.set("url",linkUrl);
+    u.searchParams.set("key",sheetConfig.key);
+    script.referrerPolicy="no-referrer";
     script.src=u.href;
     script.onerror=()=>done(new Error("GASに接続できません"));
     document.head.appendChild(script);
@@ -1040,7 +1065,8 @@ async function fetchLinkMetadata(url){
   if(!sheetConfigured())return null;
   try{
     const result=await jsonpSheetCheck("meta","",url);
-    return result&&result.ok&&typeof result.title==="string"&&result.title.trim()?{title:result.title.trim().slice(0,140)}:null;
+    if(!result||!result.ok)return null;
+    return typeof result.title==="string"&&result.title.trim()?{title:result.title.trim().slice(0,140)}:null;
   }catch(_){return null;}
 }
 async function enrichStoredTitle(item){
@@ -1059,15 +1085,54 @@ async function enrichStoredTitle(item){
     toast("✓ タイトルを自動取得しました");
   }catch(_){ if(mode==="local"){items=items.map(i=>i.id===current.id?current:i);render();} }
 }
+let titleBatchBusy=false;
+function isPlaceholderTitle(item){
+  const p=parseUrl(item.url);
+  if(!p)return false;
+  const name=String(item.title||"").trim();
+  return !name || name===defaultLinkTitle(p);
+}
+async function refreshExistingTitles(limit=30){
+  if(!sheetConfigured())return;
+  if(titleBatchBusy)return;
+  titleBatchBusy=true;
+  const candidates=items.filter(isPlaceholderTitle).slice(0,limit);
+  let updated=0;
+  try{
+    if(!candidates.length){sheetMessage("すでに仮タイトルのURLはありません。");return;}
+    sheetMessage(candidates.length+"件のタイトルを確認しています。取得できないサイトは仮タイトルのまま残ります。");
+    for(const candidate of candidates){
+      const original=items.find(i=>i.id===candidate.id);
+      if(!original||!isPlaceholderTitle(original))continue;
+      const meta=await fetchLinkMetadata(original.url);
+      if(!meta||!meta.title||meta.title===original.title)continue;
+      const auto=autoCategory([meta.title,original.memo,original.url].join(" "));
+      const updatedItem={...original,title:meta.title,category:original.autoCat?auto:original.category};
+      try{
+        if(mode==="local")items=items.map(i=>i.id===original.id?updatedItem:i);
+        await saveItem(updatedItem);
+        queueSheetChange("upsert",updatedItem);
+        updated++;
+        if(mode==="local")render();
+      }catch(e){if(mode==="local"){items=items.map(i=>i.id===original.id?original:i);render();}}
+    }
+    sheetMessage("タイトルの確認が完了しました。"+updated+"件を更新。取得できないページは共有タイトルか手動入力をご利用ください。");
+  }finally{titleBatchBusy=false;}
+}
+$("sheetTitles").addEventListener("click",()=>{
+  if(!sheetConfigured()){sheetMessage("先にGASのURLを保存してください。",true);return;}
+  refreshExistingTitles(30);
+});
+
 async function sendSheetEntry(entry){
   // Apps Script ContentService is cross-origin. Using a simple POST avoids preflight;
   // the opaque fetch result is NOT proof that a row was written.
-  await fetch(sheetConfig.url,{method:"POST",mode:"no-cors",cache:"no-store",credentials:"omit",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:new URLSearchParams({payload:JSON.stringify({key:sheetConfig.key,...entry})}).toString()});
+  await fetch(sheetConfig.url,{method:"POST",mode:"no-cors",cache:"no-store",credentials:"omit",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:new URLSearchParams({payload:JSON.stringify({...entry,key:sheetConfig.key})}).toString()});
   // Confirm separately with the GAS acknowledgement endpoint (status only).
   for(let i=0;i<6;i++){
     await new Promise(r=>setTimeout(r,i<2?650:1200));
     const res=await jsonpSheetCheck("ack",entry.opId);
-    if(!res||res.ok!==true)throw new Error(res&&res.error||"合言葉・GAS設定をご確認ください");
+    if(!res||res.ok!==true)throw new Error(res&&res.error||"GASが最新版か、公開設定をご確認ください");
     if(res.status==="done")return;
     if(res.status==="failed")throw new Error("GAS側で記録できませんでした");
   }
@@ -1087,20 +1152,27 @@ async function drainSheetQueue(){
     sheetMessage("未確認の送信が"+sheetQueue.length+"件あります。設定を確認し「未確認分を再送」を押してください（"+(e&&e.message||"通信エラー")+"）",true);
   }finally{sheetWorking=false;updateSheetState();}
 }
-$("sheetKeyVisible").addEventListener("change",e=>{$("sheetKey").type=e.target.checked?"text":"password";});
+$("sheetKeyToggle").addEventListener("click",()=>{
+  const input=$("sheetKey"),show=input.type==="password";
+  input.type=show?"text":"password";
+  $("sheetKeyToggle").textContent=show?"隠す":"表示";
+  $("sheetKeyToggle").setAttribute("aria-pressed",String(show));
+});
 $("sheetSave").addEventListener("click",()=>{
-  const url=$("sheetUrl").value.trim(),key=$("sheetKey").value.trim();
+  const url=$("sheetUrl").value.trim();
+  const key=$("sheetKey").value.trim();
   if(!validSheetUrl(url)){sheetMessage("URLはGASのウェブアプリURL（/execで終わるもの）を入力してください。",true);return;}
-  if(key.length<20){sheetMessage("合言葉は20文字以上にしてください。",true);return;}
+  if(!validSheetKey(key)){sheetMessage("合言葉は半角英数字6～32文字で設定してください。",true);return;}
   sheetConfig={url,key};
   if(!storeSheetConfig()){sheetMessage("連携設定を保存できませんでした。ブラウザの保存領域をご確認ください。",true);return;}
-  updateSheetState();sheetMessage("設定をこのブラウザに保存しました。続けて「接続テスト」を押してください。");
+  updateSheetState();sheetMessage("GASのURLと合言葉を保存しました。接続テストを押してください。毎回の入力は不要です。");
   scheduleSheetDrain();
+  refreshExistingTitles(8);
 });
 $("sheetTest").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先に連携設定を保存してください。",true);return;}
   sheetMessage("接続を確認しています…");
-  try{const result=await jsonpSheetCheck("ping");if(result&&result.ok){sheetMessage("✓ 接続確認OK。GASが設定したスプレッドシートに接続できます。");}else sheetMessage("接続できません："+(result&&result.error||"設定をご確認ください"),true);}
+  try{const result=await jsonpSheetCheck("ping");if(result&&result.ok){sheetMessage("✓ 接続確認OK。合言葉も一致し、スプレッドシートに接続できます。");}else sheetMessage("接続できません："+(result&&result.error||"設定をご確認ください"),true);}
   catch(e){sheetMessage("接続を確認できません（"+e.message+"）。GASのデプロイ設定をご確認ください。",true);}
 });
 $("sheetAll").addEventListener("click",()=>{
