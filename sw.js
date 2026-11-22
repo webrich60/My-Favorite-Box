@@ -1,5 +1,5 @@
-/* お気に入りボックス v1.2.2 | GitHub Pages | preserves all user data */
-const CACHE='favbox-shell-v122';
+/* お気に入りボックス v1.2.3 | GitHub Pages | preserves all user data */
+const CACHE='favbox-shell-v123';
 const SHELL=['./index.html','./manifest.webmanifest','./icons/icon-192.png','./icons/icon-512.png'];
 self.addEventListener('install',event=>{
   event.waitUntil(caches.open(CACHE).then(c=>c.addAll(SHELL)).then(()=>self.skipWaiting()));

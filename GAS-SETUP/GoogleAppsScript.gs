@@ -1,5 +1,5 @@
 /**
- * お気に入りボックス v1.1.8 → Googleスプレッドシート連携
+ * お気に入りボックス v1.2.3 → Googleスプレッドシート連携（スプレッドシートからの読み込みに対応）
  * スプレッドシートから拡張機能 → Apps Scriptを開いて、このコードを貼り付けます。
  * Apps Scriptの[プロジェクトの設定] → [スクリプト プロパティ] へ
  *   プロパティ: FAVBOX_ACCESS_CODE
@@ -77,7 +77,7 @@ function doPost(e) {
   }
 }
 
-/** JSONP: 接続確認／操作確認／公開Webページのタイトル取得だけを返します。 */
+/** JSONP: 接続確認／操作確認／登録一覧の読み込み／公開Webページのタイトル取得だけを返します。 */
 function doGet(e) {
   const p = (e && e.parameter) || {};
   const cb = String(p.callback || '');
@@ -96,6 +96,9 @@ function doGet(e) {
       const opId = String(p.opId || '');
       if (!/^op[a-z0-9]{10,40}$/.test(opId)) throw new Error('操作IDが不正です');
       result = {ok:true, status:CacheService.getScriptCache().get(ackKey_(opId)) || 'pending'};
+    } else if (p.mode === 'list') {
+      // 登録済みの行をアプリへ返す（読み取りのみ・合言葉必須・ページ分割）
+      result = listRows_(Number(p.offset) || 0);
     } else if (p.mode === 'meta') {
       const title = fetchPublicTitle_(String(p.url || ''));
       result = {ok:true, title:title};
@@ -223,4 +226,34 @@ function fetchPublicTitle_(raw) {
     .replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim().slice(0,140);
   cache.put(cacheKey,title||'-',21600);
   return title;
+}
+
+/** スプレッドシートの登録をページ単位で返します（1回200件まで）。 */
+function listRows_(offset) {
+  const PAGE = 200;
+  const sheet = getSheet_();
+  const total = Math.max(0, sheet.getLastRow() - 1);
+  const start = Math.max(0, Math.floor(offset));
+  if (start >= total) return {ok:true, total:total, rows:[], next:null};
+  const n = Math.min(PAGE, total - start);
+  const values = sheet.getRange(2 + start, 1, n, 8).getValues();
+  const unesc = v => { const s = String(v == null ? '' : v); return /^'[\s]*[=+\-@]/.test(s) ? s.slice(1) : s; };
+  const rows = [];
+  values.forEach(r => {
+    const id = String(r[0] || '');
+    const url = String(r[5] || '');
+    if (!/^f[a-z0-9]{8,45}$/.test(id) || !/^https?:\/\//i.test(url)) return;
+    const created = r[1] instanceof Date ? r[1].getTime() : (Date.parse(String(r[1])) || 0);
+    rows.push({
+      id: id,
+      createdAt: created,
+      platform: String(r[2] || ''),
+      category: unesc(r[3]).slice(0, 200),
+      title: unesc(r[4]).slice(0, 600),
+      url: url.slice(0, 2500),
+      memo: unesc(r[6]).slice(0, 5000)
+    });
+  });
+  const nextOffset = start + n;
+  return {ok:true, total:total, rows:rows, next: nextOffset < total ? nextOffset : null};
 }

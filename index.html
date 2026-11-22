@@ -7,8 +7,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
-<meta name="app-version" content="1.2.2">
-<title>お気に入りボックス v1.2.2 | My Favorites</title>
+<meta name="app-version" content="1.2.3">
+<title>お気に入りボックス v1.2.3 | My Favorites</title>
 <style>
   :root{
     color-scheme:light;
@@ -238,7 +238,7 @@
           <div>
             <p class="eyebrow">MY FAVORITES</p>
             <h1>お気に入りボックス</h1>
-            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>1.2.2</strong></span>
+            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>1.2.3</strong></span>
           </div>
         </div>
         <p class="hero-desc">お気に入りの動画・投稿・Webサイトを、ひとつの場所に。</p>
@@ -349,12 +349,13 @@
       <div class="sheet-actions">
         <button class="btn primary" type="button" id="sheetSave">連携設定を保存</button>
         <button class="btn" type="button" id="sheetTest">接続テスト</button>
+        <button class="btn primary" type="button" id="sheetLoad">スプレッドシートから読み込む</button>
         <button class="btn" type="button" id="sheetAll">既存のURLを一括転記</button>
         <button class="btn" type="button" id="sheetRetry">未確認分を再送</button>
         <button class="btn" type="button" id="sheetTitles">仮タイトルをまとめて取得</button>
       </div>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
-      <div class="reload-note">画面上部に「v1.2.2」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
+      <div class="reload-note">画面上部に「v1.2.3」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
       <button class="btn sm" id="refreshApp" type="button">↻ 最新の画面を読み直す</button>
       <p class="sync-help">※ 同梱GASの「スクリプト プロパティ」に合言葉を設定し、同じ文字を上欄へ入力してください。毎回の入力は不要です。旧GASは最新版へ更新してください。送信失敗分は再送できます。なお6文字は簡易保護のため、重要情報の保存や第三者へのGAS URLの公開は避けてください。</p>
     </div>
@@ -363,7 +364,7 @@
   <div class="list-heading"><h2>保存したお気に入り</h2><span id="visibleCount">0件表示</span></div>
   <div id="list" class="list"></div>
   <div id="empty" class="empty" style="display:none"></div>
-  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v1.2.2</span></footer>
+  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v1.2.3</span></footer>
 </div>
 
 <!-- dialogs -->
@@ -1183,7 +1184,7 @@ function scheduleSheetDrain(delay=0){
   if(!sheetConfigured()||sheetWorking||sheetRetryTimer) return;
   sheetRetryTimer=setTimeout(()=>{sheetRetryTimer=null;drainSheetQueue();},delay);
 }
-function jsonpSheetCheck(type,opId="",linkUrl=""){
+function jsonpSheetCheck(type,opId="",linkUrl="",extra={}){
   // GAS JSONP returns status and, in 'meta' mode, public title only.
   return new Promise((resolve,reject)=>{
     if(!sheetConfigured()) return reject(new Error("連携未設定"));
@@ -1201,6 +1202,7 @@ function jsonpSheetCheck(type,opId="",linkUrl=""){
     u.searchParams.set("callback",callback);
     if(opId)u.searchParams.set("opId",opId);
     if(linkUrl)u.searchParams.set("url",linkUrl);
+    Object.keys(extra||{}).forEach(k=>u.searchParams.set(k,String(extra[k])));
     u.searchParams.set("key",sheetConfig.key);
     script.referrerPolicy="no-referrer";
     script.src=u.href;
@@ -1302,7 +1304,7 @@ async function drainSheetQueue(){
 $("refreshApp").addEventListener("click",()=>{
   // Query string bypasses stale browser/CDN HTML cache without clearing bookmarks.
   const u=new URL('./index.html',location.href);
-  u.searchParams.set('app_version','1.2.2');
+  u.searchParams.set('app_version','1.2.3');
   u.searchParams.set('reload',String(Date.now()));
   location.assign(u.href);
 });
@@ -1344,6 +1346,68 @@ $("sheetTest").addEventListener("click",async()=>{
   try{const result=await jsonpSheetCheck("ping");if(result&&result.ok){sheetMessage("✓ 接続確認OK。合言葉も一致し、スプレッドシートに接続できます。");}else sheetMessage("接続できません："+(result&&result.error||"設定をご確認ください"),true);}
   catch(e){sheetMessage("接続を確認できません（"+e.message+"）。GASのデプロイ設定をご確認ください。",true);}
 });
+
+/* ---------- load history from the spreadsheet (v1.2.3) ---------- */
+let sheetLoadBusy=false;
+async function loadFromSheet(){
+  if(!sheetConfigured()){showNotice("読み込めません","先にGASのURLと合言葉を入れて「連携設定を保存」を押してください。",true);return;}
+  if(sheetLoadBusy)return;
+  sheetLoadBusy=true;
+  const btn=$("sheetLoad"); btn.disabled=true;
+  let offset=0, total=0, added=0, skipped=0;
+  const incoming=[];
+  try{
+    sheetMessage("スプレッドシートを読み込んでいます…");
+    for(let guard=0; guard<100; guard++){
+      const res=await jsonpSheetCheck("list","","",{offset});
+      if(!res||res.ok!==true){
+        const err=res&&res.error||"";
+        if(/操作が不正/.test(err)) throw new Error("GASが古い版です。同梱の GoogleAppsScript.gs に貼り替えて「新バージョン」でデプロイしてください。");
+        throw new Error(err||"読み込みに失敗しました");
+      }
+      total=res.total||0;
+      (res.rows||[]).forEach(r=>incoming.push(r));
+      sheetMessage("読み込み中… "+incoming.length+" / "+total+"件");
+      if(res.next==null)break;
+      offset=res.next;
+    }
+    const ids=new Set(items.map(i=>i.id));
+    const keys=new Set(items.map(i=>i.key));
+    const fresh=[];
+    for(const r of incoming){
+      const p=parseUrl(r.url);
+      if(!p||ids.has(r.id)||keys.has(p.key)){skipped++;continue;}
+      const title=String(r.title||"");
+      const memo=String(r.memo||"");
+      const auto=autoCategory([title,memo,p.href].join(" "));
+      const category=String(r.category||"").trim()||auto;
+      const it={id:String(r.id),url:p.href,key:p.key,platform:p.platform,title,memo,category,
+        autoCat:category===auto,createdAt:Number(r.createdAt)||Date.now()};
+      ids.add(it.id); keys.add(it.key); fresh.push(it);
+    }
+    if(fresh.length){
+      if(mode==="local"){
+        const before=items.slice();
+        items=items.concat(fresh);
+        try{await lsSave();}catch(e){items=before;throw new Error("端末に保存できませんでした："+(e&&e.message||""));}
+      }else{
+        for(const it of fresh){await saveItem(it);}
+      }
+      const cats=[...new Set(fresh.map(i=>i.category))];
+      for(const c of cats){try{await registerTypedCategory(c);}catch(_){}}
+      added=fresh.length;
+    }
+    render();
+    const msg="スプレッドシート "+total+"件のうち、"+added+"件をアプリに読み込みました。"+(skipped?"（すでにある・URLが不正な "+skipped+"件はスキップ）":"");
+    sheetMessage("✓ "+msg);
+    showNotice("✓ 読み込みました",msg);
+  }catch(e){
+    const m=(e&&e.message)||"読み込みに失敗しました";
+    sheetMessage(m,true);
+    showNotice("読み込めませんでした",m+"（GASのデプロイ設定・合言葉もご確認ください）",true);
+  }finally{sheetLoadBusy=false;btn.disabled=false;}
+}
+$("sheetLoad").addEventListener("click",loadFromSheet);
 $("sheetAll").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先にGASの連携設定を保存してください。",true);return;}
   if(!items.length){sheetMessage("転記するURLがまだありません。");return;}
