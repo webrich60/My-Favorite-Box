@@ -7,8 +7,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
-<meta name="app-version" content="2.1.0">
-<title>お気に入りボックス v2.1.0 | My Favorites</title>
+<meta name="app-version" content="2.2.1">
+<title>お気に入りボックス v2.2.1 | My Favorites</title>
 <style>
   :root{
     color-scheme:light;
@@ -364,7 +364,7 @@
       <p class="sheet-transfer-warn">※ リンクにはGASの接続先が含まれます。他の人に共有しないでください。</p>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
       <div id="sheetDiagOutput" class="sheet-diag-output" role="status" aria-live="polite"></div>
-      <div class="reload-note">画面上部に「v2.1.0」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
+      <div class="reload-note">画面上部に「v2.2.1」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
       <button class="btn sm" id="refreshApp" type="button">↻ 最新の画面を読み直す</button>
       <p class="sync-help">※ 同梱GAS（v2.0.0・合言葉なし）をスプレッドシートのApps Scriptに貼り付け、アクセスできるユーザーを「全員」にしてデプロイし、そのURLを上欄に入れてください。GASのURLを知っている人は登録内容を読み書きできるので、URLは他人に教えないでください。</p>
     </div>
@@ -373,7 +373,7 @@
   <div class="list-heading"><h2>保存したお気に入り</h2><span id="visibleCount">0件表示</span></div>
   <div id="list" class="list"></div>
   <div id="empty" class="empty" style="display:none"></div>
-  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.1.0</span></footer>
+  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.2.1</span></footer>
 </div>
 
 <!-- dialogs -->
@@ -1197,7 +1197,10 @@ $("bkImport").addEventListener("click", async ()=>{
 const SHEET_CONFIG_KEY = "favbox.sheet.config.v1";
 const SHEET_QUEUE_KEY = "favbox.sheet.pending.v1";
 // スマホ回線での初回GAS起動やGoogle側の遅延を考慮
-const SHEET_ACK_TIMEOUT_MS = 30000;
+const SHEET_ACK_TIMEOUT_MS = 11000;
+const SHEET_BRIDGE_TIMEOUT_MS = 30000;
+let sheetReadChannel = 'auto'; // JSONP first, Google Apps Script iframe backup
+let sheetLastReadChannel = '未確認';
 let sheetWorking = false;
 let sheetConfig = {url:"",key:"",savedAt:0};
 let sheetQueue = [];
@@ -1266,6 +1269,74 @@ function scheduleSheetDrain(delay=0){
   if(!sheetConfigured()||sheetWorking||sheetRetryTimer) return;
   sheetRetryTimer=setTimeout(()=>{sheetRetryTimer=null;drainSheetQueue();},delay);
 }
+/** GitHub PagesからGASへの読み取り: JSONPが遮断された端末はGAS HTMLServiceへ切替。 */
+async function sheetApiCheck(type,opId="",linkUrl="",extra={}){
+  if(!sheetConfigured())throw new Error('GAS URLが未設定です');
+  const preferred = sheetReadChannel === 'bridge' ? 'bridge' : 'jsonp';
+  const first = preferred === 'bridge' ? bridgeSheetCheck : jsonpSheetCheck;
+  const second = preferred === 'bridge' ? jsonpSheetCheck : bridgeSheetCheck;
+  try{
+    const result = await first(type,opId,linkUrl,extra);
+    sheetReadChannel = preferred;
+    sheetLastReadChannel = preferred === 'bridge' ? 'GAS HTML中継' : 'GAS JSONP';
+    return result;
+  }catch(err){
+    try{
+      const result = await second(type,opId,linkUrl,extra);
+      sheetReadChannel = preferred === 'bridge' ? 'jsonp' : 'bridge';
+      sheetLastReadChannel = preferred === 'bridge' ? 'GAS JSONP' : 'GAS HTML中継';
+      return result;
+    }catch(err2){
+      sheetReadChannel='auto';
+      throw new Error('JSONP / HTML中継とも失敗: '+(err&&err.message||'通信エラー')+' / '+(err2&&err2.message||'通信エラー'));
+    }
+  }
+}
+/** GASが生成した小さなHTMLをiframeで読み込み、google.script.run経由の結果を受け取る。 */
+function bridgeSheetCheck(type,opId="",linkUrl="",extra={}){
+  return new Promise((resolve,reject)=>{
+    if(!sheetConfigured())return reject(new Error('GAS URLが未設定です'));
+    const requestId='fb'+Date.now().toString(36)+Math.random().toString(36).slice(2,14);
+    const iframe=document.createElement('iframe');
+    iframe.title='Googleスプレッドシート同期';
+    iframe.setAttribute('aria-hidden','true');
+    iframe.style.cssText='position:absolute;left:-10000px;top:0;width:1px;height:1px;opacity:0;border:0;pointer-events:none';
+    let finished=false;
+    let timer=null;
+    function finish(err,data){
+      if(finished)return;
+      finished=true;clearTimeout(timer);
+      window.removeEventListener('message',onMessage);
+      iframe.remove();
+      if(err)reject(err);else resolve(data);
+    }
+    function onMessage(event){
+      const d=event&&event.data;
+      if(!d||typeof d!=='object'||d.type!=='favbox-gas-bridge-v1'||d.requestId!==requestId)return;
+      // Apps Script HTMLService iframe origin is usually googleusercontent.com.
+      // Check the origin AND unguessable request token before accepting values.
+      const origin=String(event.origin||'');
+      if(!/^https:\/\/([a-z0-9-]+\.)*googleusercontent\.com$/i.test(origin) &&
+         origin!=='https://script.google.com')return;
+      if(d.ok===true&&d.result&&typeof d.result==='object')finish(null,d.result);
+      else finish(new Error(String(d.error||'GAS中継の実行に失敗しました')));
+    }
+    const u=new URL(sheetConfig.url);
+    u.searchParams.set('mode','bridge');
+    u.searchParams.set('requestId',requestId);
+    u.searchParams.set('parentOrigin',location.origin);
+    u.searchParams.set('readMode',type);
+    if(opId)u.searchParams.set('opId',opId);
+    if(linkUrl)u.searchParams.set('url',linkUrl);
+    Object.entries(extra||{}).forEach(([k,v])=>u.searchParams.set(k,String(v)));
+    timer=setTimeout(()=>finish(new Error('GAS HTML中継の応答が30秒ありません')),SHEET_BRIDGE_TIMEOUT_MS);
+    iframe.onerror=()=>finish(new Error('GAS HTML中継ページを開けません'));
+    window.addEventListener('message',onMessage);
+    iframe.src=u.href;
+    document.body.appendChild(iframe);
+  });
+}
+
 function jsonpSheetCheck(type,opId="",linkUrl="",extra={}){
   // GAS JSONP returns status and, in 'meta' mode, public title only.
   return new Promise((resolve,reject)=>{
@@ -1294,7 +1365,7 @@ function jsonpSheetCheck(type,opId="",linkUrl="",extra={}){
 async function fetchLinkMetadata(url){
   if(!sheetConfigured())return null;
   try{
-    const result=await jsonpSheetCheck("meta","",url);
+    const result=await sheetApiCheck("meta","",url);
     if(!result||!result.ok)return null;
     return typeof result.title==="string"&&result.title.trim()?{title:result.title.trim().slice(0,140)}:null;
   }catch(_){return null;}
@@ -1354,19 +1425,55 @@ $("sheetTitles").addEventListener("click",()=>{
   refreshExistingTitles(30);
 });
 
+async function sheetAckIsDone(opId,attempts){
+  for(let i=0;i<attempts;i++){
+    await new Promise(r=>setTimeout(r,i<2?600:1100));
+    const res=await sheetApiCheck('ack',opId);
+    if(!res||res.ok!==true)throw new Error(res&&res.error||'GASの応答が不正です');
+    if(res.status==='done')return true;
+    if(res.status==='failed')throw new Error('GAS側で保存に失敗しました');
+  }
+  return false;
+}
+function submitSheetForm(entry){
+  return new Promise((resolve,reject)=>{
+    const name='favboxPost'+Date.now()+Math.random().toString(36).slice(2);
+    const iframe=document.createElement('iframe');
+    iframe.name=name;iframe.setAttribute('aria-hidden','true');
+    iframe.style.cssText='position:absolute;left:-10000px;width:1px;height:1px;border:0;opacity:0';
+    const form=document.createElement('form');
+    form.action=sheetConfig.url;form.method='POST';form.target=name;
+    form.style.display='none';
+    const input=document.createElement('input');
+    input.type='hidden';input.name='payload';input.value=JSON.stringify({...entry});
+    form.appendChild(input);
+    let submitted=false,done=false;
+    const timer=setTimeout(()=>finish(null),15000);
+    function finish(error){
+      if(done)return;done=true;clearTimeout(timer);
+      iframe.remove();form.remove();
+      if(error)reject(error);else resolve();
+    }
+    iframe.addEventListener('load',()=>{if(submitted)finish(null);});
+    iframe.addEventListener('error',()=>finish(new Error('フォーム送信が失敗しました')));
+    document.body.appendChild(iframe);
+    document.body.appendChild(form);
+    try{submitted=true;form.submit();}catch(e){finish(e);}
+  });
+}
 async function sendSheetEntry(entry){
   // Apps Script ContentService is cross-origin. Using a simple POST avoids preflight;
   // the opaque fetch result is NOT proof that a row was written.
-  await fetch(sheetConfig.url,{method:"POST",mode:"no-cors",cache:"no-store",credentials:"omit",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:new URLSearchParams({payload:JSON.stringify({...entry})}).toString()});
-  // Confirm separately with the GAS acknowledgement endpoint (status only).
-  for(let i=0;i<6;i++){
-    await new Promise(r=>setTimeout(r,i<2?650:1200));
-    const res=await jsonpSheetCheck("ack",entry.opId);
-    if(!res||res.ok!==true)throw new Error(res&&res.error||"GASが最新版か、公開設定をご確認ください");
-    if(res.status==="done")return;
-    if(res.status==="failed")throw new Error("GAS側で記録できませんでした");
-  }
-  throw new Error("書き込み完了の確認ができませんでした");
+  let fetchFailed=false;
+  try{
+    await fetch(sheetConfig.url,{method:"POST",mode:"no-cors",cache:"no-store",credentials:"omit",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:new URLSearchParams({payload:JSON.stringify({...entry})}).toString()});
+  }catch(_){fetchFailed=true;}
+  if(!fetchFailed && await sheetAckIsDone(entry.opId,4))return;
+  // Some mobile browsers reject opaque cross-origin fetch POST. Traditional HTML form
+  // submission has no CORS dependency, and ack is still confirmed separately.
+  await submitSheetForm(entry);
+  if(await sheetAckIsDone(entry.opId,5))return;
+  throw new Error("書き込み完了の確認ができませんでした。未送信履歴は保存されています");
 }
 async function drainSheetQueue(){
   if(sheetWorking||!sheetConfigured()||!sheetQueue.length){updateSheetState();return;}
@@ -1386,7 +1493,7 @@ async function drainSheetQueue(){
 $("refreshApp").addEventListener("click",()=>{
   // Query string bypasses stale browser/CDN HTML cache without clearing bookmarks.
   const u=new URL('./index.html',location.href);
-  u.searchParams.set('app_version','2.1.0');
+  u.searchParams.set('app_version','2.2.1');
   u.searchParams.set('reload',String(Date.now()));
   location.assign(u.href);
 });
@@ -1457,7 +1564,8 @@ $("sheetDiagnose").addEventListener("click",async()=>{
   const output=$("sheetDiagOutput");
   output.textContent='診断しています…（スマホの回線では30秒程度かかる場合があります）';
   const lines=[];
-  lines.push('接続診断 / v2.1.0');
+  lines.push('接続診断 / v2.2.1');
+  lines.push('読み取り方式：'+sheetLastReadChannel);
   lines.push('① 接続設定：'+(sheetConfigured()?'入力済み':'未設定'));
   lines.push('② インターネット：'+(navigator.onLine?'オンライン判定':'オフライン判定'));
   try{
@@ -1479,9 +1587,10 @@ $("sheetDiagnose").addEventListener("click",async()=>{
   }else{
     output.textContent=lines.join('\n')+'\n⑤ GASとの通信：確認中…';
     try{
-      const result=await jsonpSheetCheck('ping');
+      const result=await sheetApiCheck('ping');
       if(result&&result.ok===true){
         lines.push('⑤ GASとの通信：正常（接続できました）');
+        lines.push('   使用方式：'+sheetLastReadChannel);
         lines.push('次の操作：「今すぐ同期する」を押してください。');
       }else{
         lines.push('⑤ GASとの通信：エラー ('+(result&&result.error||'GASからの応答が不正です')+')');
@@ -1514,7 +1623,7 @@ $("clearYes").addEventListener("click",async()=>{
 $("sheetTest").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先に連携設定を保存してください。",true);return;}
   sheetMessage("接続を確認しています…");
-  try{const result=await jsonpSheetCheck("ping");
+  try{const result=await sheetApiCheck("ping");
     if(result&&result.ok){sheetMessage("✓ 接続確認OK。スプレッドシートに接続できます。");showNotice("✓ 接続できました","スプレッドシートに接続できます。");}
     else{const er=result&&result.error||"設定をご確認ください";const m=/合言葉/.test(er)?"GASが古い版（合言葉あり）のままです。同梱の GoogleAppsScript.gs（v2.0.0）に全部貼り替えて保存し、「新バージョン」でデプロイしてください。":"接続できません："+er;sheetMessage(m,true);showNotice("接続できません",m,true);}}
   catch(e){showConnectionHelp(e);}
@@ -1525,7 +1634,7 @@ function showConnectionHelp(e){
   const m="GASに接続できません（"+(e&&e.message||"原因不明")+"）。";
   sheetMessage(m+"下の確認方法をご覧ください。",true);
   showNotice("GASに接続できません",
-    m+"\n\n下のボタンでGASのURLを直接開いてください。\n・「invalid callback」とだけ出る → GASは正常です。この画面を読み直して再度お試しください。\n・Googleのログイン画面／「アクセス権限が必要」 → デプロイの「アクセスできるユーザー」を「全員」にして、新バージョンでデプロイしてください。\n・「スクリプト関数が見つかりません」やエラー → GASの貼り付けが不完全です。同梱のGASを全部貼り直して保存し、新バージョンでデプロイしてください。",
+    m+"\n\n1. スマホではLINE内ブラウザではなくChrome通常タブで開いてください。\n2. GASを同梱の最新版に貼り替え、デプロイ管理で「新バージョン」・「自分として実行」・「全員」を確認してください。\n3. 設定画面の「スマホの接続を詳しく診断する」で通信結果を確認してください。\n※ GAS URLを直接開いて「invalid callback」と出ても、スプレッドシートの同期に成功した証拠にはなりません。",
     true, sheetConfig.url);
 }
 /* ---------- automatic two-way synchronization with the GAS-backed sheet ---------- */
@@ -1617,7 +1726,7 @@ async function loadFromSheet(quiet=false){
   try{
     sheetSyncInfo('🔄 スプレッドシートと同期中…');
     for(let guard=0;guard<100;guard++){
-      const res=await jsonpSheetCheck('list','','',{offset});
+      const res=await sheetApiCheck('list','','',{offset});
       if(!res||res.ok!==true)throw new Error(res&&res.error||'GASの読み込みに失敗しました');
       if(!Array.isArray(res.rows))throw new Error('GASが予期しないデータを返しました');
       incoming.push(...res.rows);
