@@ -77,11 +77,20 @@ function doPost(e) {
 /** JSONP: 接続確認／操作確認／登録一覧の読み込み／公開Webページのタイトル取得だけを返します。 */
 function doGet(e) {
   const p = (e && e.parameter) || {};
+  if (p.mode === 'bridge') return sheetBridgePage_(p);
   const cb = String(p.callback || '');
   // 任意のJavaScriptを実行させないため、コールバック名を厳格にチェック
   if (!/^favSheetCb_[a-z0-9_]{8,24}$/.test(cb)) {
     return ContentService.createTextOutput('invalid callback');
   }
+  const result = sheetRead_(p);
+  return ContentService.createTextOutput(cb + '(' + JSON.stringify(result) + ');')
+    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+}
+
+
+/** JSONP and HTMLService use the same read-only data endpoints. */
+function sheetRead_(p) {
   let result;
   try {
     if (p.mode === 'ping') {
@@ -103,8 +112,38 @@ function doGet(e) {
   } catch (err) {
     result = {ok:false, error:'GASの公開設定とシートへの権限をご確認ください'};
   }
-  return ContentService.createTextOutput(cb + '(' + JSON.stringify(result) + ');')
-    .setMimeType(ContentService.MimeType.JAVASCRIPT);
+  return result;
+}
+
+/** Google Apps Script's own HTMLService runs google.script.run with no cross-origin fetch. */
+function bridgeRead(params) {
+  if (!params || !['ping','ack','list','meta'].includes(String(params.mode || ''))) {
+    return {ok:false,error:'不正な読取処理です'};
+  }
+  return sheetRead_(params);
+}
+function sheetBridgePage_(params) {
+  const origin = String(params.parentOrigin || '');
+  const rid = String(params.requestId || '');
+  if (!/^https:\/\/[a-z0-9.-]+(?::\d+)?$/i.test(origin) || !/^fb[a-z0-9]{12,50}$/.test(rid)) {
+    return HtmlService.createHtmlOutput('invalid bridge');
+  }
+  const mode = String(params.readMode || '');
+  if (!['ping','ack','list','meta'].includes(mode)) return HtmlService.createHtmlOutput('invalid mode');
+  const payload = {mode:mode, opId:String(params.opId || ''), offset:Number(params.offset) || 0, url:String(params.url || '')};
+  const safe = v => JSON.stringify(v).replace(/</g,'\\u003c').replace(/>/g,'\\u003e').replace(/&/g,'\\u0026');
+  // Messages are sent only to the parent origin the app supplied. The browser
+  // verifies that origin and the random request ID before accepting the reply.
+  const html = '<!doctype html><html><head><meta charset="utf-8"></head><body>' +
+    '<script>' +
+    'const requestId='+safe(rid)+';const parentOrigin='+safe(origin)+';const payload='+safe(payload)+';' +
+    'function reply(ok,result,error){try{window.top.postMessage({type:"favbox-gas-bridge-v1",requestId:requestId,ok:ok,result:result||null,error:error||""},parentOrigin);}catch(e){}}' +
+    'google.script.run.withSuccessHandler(function(result){reply(true,result,"");})' +
+    '.withFailureHandler(function(error){reply(false,null,String(error && error.message || error || "GAS error"));})' +
+    '.bridgeRead(payload);' +
+    '<\/script></body></html>';
+  return HtmlService.createHtmlOutput(html)
+    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
 }
 
 function ackKey_(opId) {
