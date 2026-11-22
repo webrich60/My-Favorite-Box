@@ -7,8 +7,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
-<meta name="app-version" content="1.2.3">
-<title>お気に入りボックス v1.2.3 | My Favorites</title>
+<meta name="app-version" content="2.0.1">
+<title>お気に入りボックス v2.0.1 | My Favorites</title>
 <style>
   :root{
     color-scheme:light;
@@ -142,7 +142,7 @@
   .notice-dlg h3{color:#0a6b2c;font-size:22px}
   .notice-dlg.err{border-color:#b00020}
   .notice-dlg.err h3{color:#b00020}
-  .notice-body{font-weight:700;color:#111;line-height:1.7;overflow-wrap:anywhere}
+  .notice-body{font-weight:700;color:#111;line-height:1.7;overflow-wrap:anywhere;white-space:pre-line;text-align:left}
   .notice-dlg .row{justify-content:center}
   .notice-dlg .btn{min-width:140px}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#143957;color:#fff;font-weight:760;padding:11px 18px;border-radius:13px;box-shadow:0 10px 22px rgba(9,28,46,.24);display:none;z-index:60;min-width:160px;text-align:center;max-width:calc(100vw - 30px)}
@@ -200,6 +200,9 @@
   .sheet-code-row .btn[aria-pressed="true"]{background:#173b5d;border-color:#173b5d;color:#fff}
   .sheet-code-row .btn svg{width:19px;height:19px;flex:none}
   @media(max-width:480px){.sheet-code-row .btn{min-width:129px;font-size:13px;padding:9px 8px}.sheet-code-row{gap:7px}}
+  .sheet-clear-row{margin-top:8px}
+  .sheet-clear-btn{background:#fff;border:2px solid #b00020;color:#b00020;font-weight:800;padding:8px 14px}
+  .sheet-clear-btn:hover{background:#fdecee}
   .sheet-code-note{font-size:12px;font-weight:750;color:#304b63;margin:5px 0 0}
   .sheet-details input[type=password]{letter-spacing:.08em}
   /* One button per row in every viewport. Horizontal text cannot be crushed. */
@@ -238,7 +241,7 @@
           <div>
             <p class="eyebrow">MY FAVORITES</p>
             <h1>お気に入りボックス</h1>
-            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>1.2.3</strong></span>
+            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>2.0.1</strong></span>
           </div>
         </div>
         <p class="hero-desc">お気に入りの動画・投稿・Webサイトを、ひとつの場所に。</p>
@@ -334,16 +337,9 @@
       <p>URLを登録・編集・削除すると、Googleスプレッドシートにも自動反映します。元のブラウザ保存はそのまま残ります。</p>
       <div class="grid">
         <div class="full">
-          <label for="sheetUrl">GASのウェブアプリURL</label>
+          <label for="sheetUrl">GASのウェブアプリURL <span class="optional">これだけ入れればOK（合言葉は不要）</span></label>
           <input id="sheetUrl" type="url" inputmode="url" autocomplete="off" placeholder="https://script.google.com/macros/s/…/exec">
-        </div>
-        <div class="full">
-          <label for="sheetKey">GAS連携の合言葉 <span class="optional">半角英数字6～32文字・初回のみ</span></label>
-          <div class="sheet-code-row">
-            <input id="sheetKey" type="password" autocomplete="off" spellcheck="false" minlength="6" maxlength="32" placeholder="GASで設定した合言葉" aria-describedby="sheetKeyNote">
-            <button class="btn sheet-code-toggle" id="sheetKeyToggle" type="button" aria-pressed="false" aria-label="アクセスコードを表示" title="入力したアクセスコードを表示します"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></svg><span id="sheetKeyToggleText">コードを表示</span></button>
-          </div>
-          <div id="sheetKeyNote" class="sheet-code-note">アプリを開くためのコードではありません。GASと同じ文字を一度だけ入力します。右の「コードを表示」で入力内容を確認できます。</div>
+          <div class="sheet-clear-row"><button class="btn sheet-clear-btn" type="button" id="sheetClear">🗑 クリア（入れてあるGASのURLを削除）</button></div>
         </div>
       </div>
       <div class="sheet-actions">
@@ -355,23 +351,32 @@
         <button class="btn" type="button" id="sheetTitles">仮タイトルをまとめて取得</button>
       </div>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
-      <div class="reload-note">画面上部に「v1.2.3」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
+      <div class="reload-note">画面上部に「v2.0.1」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
       <button class="btn sm" id="refreshApp" type="button">↻ 最新の画面を読み直す</button>
-      <p class="sync-help">※ 同梱GASの「スクリプト プロパティ」に合言葉を設定し、同じ文字を上欄へ入力してください。毎回の入力は不要です。旧GASは最新版へ更新してください。送信失敗分は再送できます。なお6文字は簡易保護のため、重要情報の保存や第三者へのGAS URLの公開は避けてください。</p>
+      <p class="sync-help">※ 同梱GAS（v2.0.0・合言葉なし）をスプレッドシートのApps Scriptに貼り付け、アクセスできるユーザーを「全員」にしてデプロイし、そのURLを上欄に入れてください。GASのURLを知っている人は登録内容を読み書きできるので、URLは他人に教えないでください。</p>
     </div>
   </details>
 
   <div class="list-heading"><h2>保存したお気に入り</h2><span id="visibleCount">0件表示</span></div>
   <div id="list" class="list"></div>
   <div id="empty" class="empty" style="display:none"></div>
-  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v1.2.3</span></footer>
+  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.0.1</span></footer>
 </div>
 
 <!-- dialogs -->
+<div class="ov" id="clearOv" role="alertdialog" aria-modal="true" aria-labelledby="clearTitle">
+  <div class="dlg notice-dlg err">
+    <h3 id="clearTitle">GASのURLを削除しますか？</h3>
+    <div class="notice-body">この端末に保存してあるGASのURL（と以前の合言葉）を完全に削除します。登録したお気に入りやスプレッドシートの中身は消えません。</div>
+    <div class="row"><button class="btn" type="button" data-close>やめる</button><button class="btn danger" type="button" id="clearYes" style="border:2px solid #b00020;color:#b00020;font-weight:800">削除する</button></div>
+  </div>
+</div>
+
 <div class="ov" id="noticeOv" role="alertdialog" aria-modal="true" aria-labelledby="noticeTitle">
   <div class="dlg notice-dlg" id="noticeDlg">
     <h3 id="noticeTitle">✓ 保存しました</h3>
     <div id="noticeBody" class="notice-body"></div>
+    <p id="noticeLinkWrap" style="display:none;margin:12px 0 0"><a id="noticeLink" class="btn" href="#" target="_blank" rel="noopener" style="text-decoration:none;display:inline-flex">GASのURLを開いて確認する ↗</a></p>
     <div class="row"><button class="btn primary" type="button" id="noticeOk" data-close>OK</button></div>
   </div>
 </div>
@@ -698,6 +703,26 @@ async function favWrite(key,value){
   }catch(e){problems.push('CacheStorage: '+(e&&e.name||'利用不可'));}
   throw new Error('端末側で保存がブロックされました（'+problems.join(' / ')+'）。Chromeの通常タブで公開URLを開いてください。');
 }
+async function favDbDelete(key){
+  const db=await favOpenDb();
+  return new Promise((resolve,reject)=>{
+    try{
+      const tx=db.transaction("entries","readwrite");
+      tx.objectStore("entries").delete(key);
+      tx.oncomplete=()=>resolve();
+      tx.onerror=()=>reject(tx.error||new Error("削除失敗"));
+    }catch(e){reject(e);}
+  });
+}
+async function favErase(key){
+  // すべての保存先から消す（古い値が別の保存先から復活しないように）
+  try{await favDbDelete(key);}catch(_){}
+  try{localStorage.removeItem(key);}catch(_){}
+  try{if('caches' in window){const c=await caches.open(FAV_CACHE_DATA);await c.delete(favCacheUrl(key));}}catch(_){}
+  favBackendOverrides.delete(key);
+  const left=await favRead(key);
+  if(left!==null&&left!==undefined&&left!=="")throw new Error("一部の保存先から削除できませんでした");
+}
 async function favStorageCheck(){
   const token=String(Date.now())+String(Math.random());
   const store=await favWrite('favbox.storage.check.v1',token);
@@ -773,8 +798,10 @@ function fmtDate(ms){ const d = new Date(ms); return Number.isNaN(d.getTime()) ?
 function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("show"),2200); }
 function findDup(key, exceptId){ return items.find(i => i.key === key && i.id !== exceptId); }
 function openOv(id){ $(id).classList.add("show"); }
-function showNotice(title, body, isError){
+function showNotice(title, body, isError, link){
   $("noticeTitle").textContent = title;
+  $("noticeLinkWrap").style.display = link ? "block" : "none";
+  if(link) $("noticeLink").href = link;
   $("noticeBody").textContent = body || "";
   $("noticeDlg").classList.toggle("err", !!isError);
   openOv("noticeOv");
@@ -1152,7 +1179,6 @@ async function loadSheetState(){
   try{const cfg=JSON.parse(await favRead(SHEET_CONFIG_KEY)||"{}"); sheetConfig={url:String(cfg.url||""),key:String(cfg.key||"")};}catch(e){sheetConfig={url:"",key:""};}
   try{const q=JSON.parse(await favRead(SHEET_QUEUE_KEY)||"[]"); sheetQueue=Array.isArray(q)?q.filter(x=>x&&x.opId&&x.action&&x.item):[];}catch(e){sheetQueue=[];}
   $("sheetUrl").value=sheetConfig.url;
-  $("sheetKey").value=sheetConfig.key;
   updateSheetState();
   if(sheetConfigured()) scheduleSheetDrain();
 }
@@ -1164,7 +1190,7 @@ async function storeSheetConfig(){
   return backend;
 }
 function validSheetKey(key){return /^[A-Za-z0-9]{6,32}$/.test(key);}
-function sheetConfigured(){return !!sheetConfig.url&&validSheetKey(sheetConfig.key);}
+function sheetConfigured(){return !!sheetConfig.url&&validSheetUrl(sheetConfig.url);}
 function sheetMessage(text,isError){const e=$("sheetMessage");e.textContent=text;e.classList.toggle("error",!!isError);}
 function updateSheetState(){
   $("sheetState").textContent=!sheetConfigured()?"未設定":sheetWorking?"送信中":sheetQueue.length?"未確認 "+sheetQueue.length+"件":"連携設定済み";
@@ -1203,7 +1229,6 @@ function jsonpSheetCheck(type,opId="",linkUrl="",extra={}){
     if(opId)u.searchParams.set("opId",opId);
     if(linkUrl)u.searchParams.set("url",linkUrl);
     Object.keys(extra||{}).forEach(k=>u.searchParams.set(k,String(extra[k])));
-    u.searchParams.set("key",sheetConfig.key);
     script.referrerPolicy="no-referrer";
     script.src=u.href;
     script.onerror=()=>done(new Error("GASに接続できません"));
@@ -1276,7 +1301,7 @@ $("sheetTitles").addEventListener("click",()=>{
 async function sendSheetEntry(entry){
   // Apps Script ContentService is cross-origin. Using a simple POST avoids preflight;
   // the opaque fetch result is NOT proof that a row was written.
-  await fetch(sheetConfig.url,{method:"POST",mode:"no-cors",cache:"no-store",credentials:"omit",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:new URLSearchParams({payload:JSON.stringify({...entry,key:sheetConfig.key})}).toString()});
+  await fetch(sheetConfig.url,{method:"POST",mode:"no-cors",cache:"no-store",credentials:"omit",headers:{"Content-Type":"application/x-www-form-urlencoded;charset=UTF-8"},body:new URLSearchParams({payload:JSON.stringify({...entry})}).toString()});
   // Confirm separately with the GAS acknowledgement endpoint (status only).
   for(let i=0;i<6;i++){
     await new Promise(r=>setTimeout(r,i<2?650:1200));
@@ -1304,29 +1329,15 @@ async function drainSheetQueue(){
 $("refreshApp").addEventListener("click",()=>{
   // Query string bypasses stale browser/CDN HTML cache without clearing bookmarks.
   const u=new URL('./index.html',location.href);
-  u.searchParams.set('app_version','1.2.3');
+  u.searchParams.set('app_version','2.0.1');
   u.searchParams.set('reload',String(Date.now()));
   location.assign(u.href);
 });
-$("sheetKeyToggle").addEventListener("click",()=>{
-  const input=$("sheetKey"),show=input.type==="password";
-  input.type=show?"text":"password";
-  $("sheetKeyToggleText").textContent=show?"コードを隠す":"コードを表示";
-  const button=$("sheetKeyToggle");
-  button.setAttribute("aria-pressed",String(show));
-  button.setAttribute("aria-label",show?"アクセスコードを隠す":"アクセスコードを表示");
-  button.title=show?"アクセスコードを伏せ字に戻します":"入力したアクセスコードを表示します";
-  button.querySelector("svg").innerHTML=show
-    ? '<path d="m3 3 18 18"/><path d="M10.7 5.6A11.5 11.5 0 0 1 12 5.5c6.5 0 10 6.5 10 6.5a17 17 0 0 1-3.1 3.8M6.3 6.7A17.4 17.4 0 0 0 2 12s3.5 6.5 10 6.5c1.5 0 2.8-.3 4-1"/><path d="M10 10a3 3 0 0 0 4 4"/>'
-    : '<path d="M2 12s3.5-6.5 10-6.5S22 12 22 12s-3.5 6.5-10 6.5S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/>';
-});
 $("sheetSave").addEventListener("click",async()=>{
   const url=$("sheetUrl").value.trim();
-  const key=$("sheetKey").value.trim();
   if(!validSheetUrl(url)){const m="URLはGASのウェブアプリURL（/execで終わるもの）を入力してください。";sheetMessage(m,true);showNotice("保存できませんでした",m,true);return;}
-  if(!validSheetKey(key)){const m="合言葉は半角英数字6～32文字で設定してください。（全角になっていないか確認してください）";sheetMessage(m,true);showNotice("保存できませんでした",m,true);return;}
   const previousConfig={...sheetConfig};
-  sheetConfig={url,key};
+  sheetConfig={url,key:""};
   let savedTo='';
   try{savedTo=await storeSheetConfig();}
   catch(e){
@@ -1335,22 +1346,47 @@ $("sheetSave").addEventListener("click",async()=>{
     return;
   }
   updateSheetState();sheetMessage('✓ 設定を保存しました（'+savedTo+'）。次に「接続テスト」を押してください。');
-  showNotice('✓ 保存しました','連携設定（GASのURLと合言葉）を保存しました。続けて「接続テスト」を押して確認してください。');
+  showNotice('✓ 保存しました','GASのURLを保存しました。続けて「接続テスト」を押して確認してください。');
   scheduleSheetDrain();
   // Do not overwrite a successful save message when there are no placeholder titles.
   if(items.some(isPlaceholderTitle)) refreshExistingTitles(8);
 });
+$("sheetClear").addEventListener("click",()=>openOv("clearOv"));
+$("clearYes").addEventListener("click",async()=>{
+  closeOv($("clearOv"));
+  try{
+    await favErase(SHEET_CONFIG_KEY);
+    sheetConfig={url:"",key:""};
+    $("sheetUrl").value="";
+    updateSheetState();
+    sheetMessage("GASのURLを削除しました。新しいURLを入れて「連携設定を保存」を押してください。");
+    showNotice("✓ 削除しました","保存してあったGASのURLを削除しました。新しいURLを入れて「連携設定を保存」を押してください。");
+    setTimeout(()=>{try{$("sheetUrl").focus();}catch(_){}} ,300);
+  }catch(e){
+    showNotice("削除できませんでした",(e&&e.message||"原因不明")+"。画面を読み直してもう一度お試しください。",true);
+  }
+});
 $("sheetTest").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先に連携設定を保存してください。",true);return;}
   sheetMessage("接続を確認しています…");
-  try{const result=await jsonpSheetCheck("ping");if(result&&result.ok){sheetMessage("✓ 接続確認OK。合言葉も一致し、スプレッドシートに接続できます。");}else sheetMessage("接続できません："+(result&&result.error||"設定をご確認ください"),true);}
-  catch(e){sheetMessage("接続を確認できません（"+e.message+"）。GASのデプロイ設定をご確認ください。",true);}
+  try{const result=await jsonpSheetCheck("ping");
+    if(result&&result.ok){sheetMessage("✓ 接続確認OK。スプレッドシートに接続できます。");showNotice("✓ 接続できました","スプレッドシートに接続できます。");}
+    else{const er=result&&result.error||"設定をご確認ください";const m=/合言葉/.test(er)?"GASが古い版（合言葉あり）のままです。同梱の GoogleAppsScript.gs（v2.0.0）に全部貼り替えて保存し、「新バージョン」でデプロイしてください。":"接続できません："+er;sheetMessage(m,true);showNotice("接続できません",m,true);}}
+  catch(e){showConnectionHelp(e);}
 });
 
-/* ---------- load history from the spreadsheet (v1.2.3) ---------- */
+
+function showConnectionHelp(e){
+  const m="GASに接続できません（"+(e&&e.message||"原因不明")+"）。";
+  sheetMessage(m+"下の確認方法をご覧ください。",true);
+  showNotice("GASに接続できません",
+    m+"\n\n下のボタンでGASのURLを直接開いてください。\n・「invalid callback」とだけ出る → GASは正常です。この画面を読み直して再度お試しください。\n・Googleのログイン画面／「アクセス権限が必要」 → デプロイの「アクセスできるユーザー」を「全員」にして、新バージョンでデプロイしてください。\n・「スクリプト関数が見つかりません」やエラー → GASの貼り付けが不完全です。同梱のGASを全部貼り直して保存し、新バージョンでデプロイしてください。",
+    true, sheetConfig.url);
+}
+/* ---------- load history from the spreadsheet ---------- */
 let sheetLoadBusy=false;
-async function loadFromSheet(){
-  if(!sheetConfigured()){showNotice("読み込めません","先にGASのURLと合言葉を入れて「連携設定を保存」を押してください。",true);return;}
+async function loadFromSheet(quiet){
+  if(!sheetConfigured()){if(!quiet)showNotice("読み込めません","先にGASのURLを入れて「連携設定を保存」を押してください。",true);return;}
   if(sheetLoadBusy)return;
   sheetLoadBusy=true;
   const btn=$("sheetLoad"); btn.disabled=true;
@@ -1362,7 +1398,7 @@ async function loadFromSheet(){
       const res=await jsonpSheetCheck("list","","",{offset});
       if(!res||res.ok!==true){
         const err=res&&res.error||"";
-        if(/操作が不正/.test(err)) throw new Error("GASが古い版です。同梱の GoogleAppsScript.gs に貼り替えて「新バージョン」でデプロイしてください。");
+        if(/操作が不正|合言葉/.test(err)) throw new Error("GASが古い版です。同梱の GoogleAppsScript.gs（v2.0.0）に全部貼り替えて保存し、「新バージョン」でデプロイしてください。");
         throw new Error(err||"読み込みに失敗しました");
       }
       total=res.total||0;
@@ -1400,14 +1436,14 @@ async function loadFromSheet(){
     render();
     const msg="スプレッドシート "+total+"件のうち、"+added+"件をアプリに読み込みました。"+(skipped?"（すでにある・URLが不正な "+skipped+"件はスキップ）":"");
     sheetMessage("✓ "+msg);
-    showNotice("✓ 読み込みました",msg);
+    if(!quiet||added)showNotice("✓ 読み込みました",msg);
   }catch(e){
     const m=(e&&e.message)||"読み込みに失敗しました";
-    sheetMessage(m,true);
-    showNotice("読み込めませんでした",m+"（GASのデプロイ設定・合言葉もご確認ください）",true);
+    if(/接続できません|応答がありません/.test(m)){ if(quiet) sheetMessage("GASに接続できません。「接続テスト」で原因を確認できます。",true); else showConnectionHelp(e); }
+    else{ sheetMessage(m,true); if(!quiet) showNotice("読み込めませんでした",m,true); }
   }finally{sheetLoadBusy=false;btn.disabled=false;}
 }
-$("sheetLoad").addEventListener("click",loadFromSheet);
+$("sheetLoad").addEventListener("click",()=>loadFromSheet(false));
 $("sheetAll").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先にGASの連携設定を保存してください。",true);return;}
   if(!items.length){sheetMessage("転記するURLがまだありません。");return;}
@@ -1429,6 +1465,8 @@ document.querySelectorAll(".jump a[data-ico]").forEach(a => {
   await loadCustomCategories();
   await loadSheetState();
   await init();
+  // 一覧が空でGASが設定済みなら、スプレッドシートから自動で読み込む
+  if(mode==="local"&&!items.length&&sheetConfigured()) loadFromSheet(true);
 })().catch(e=>{setStatus("初期化できませんでした。Chromeで公開URLを開き直してください。",true);console.error(e);});
 })();
 </script>
