@@ -7,8 +7,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
-<meta name="app-version" content="2.2.1">
-<title>お気に入りボックス v2.2.1 | My Favorites</title>
+<meta name="app-version" content="2.2.2">
+<title>お気に入りボックス v2.2.2 | My Favorites</title>
 <style>
   :root{
     color-scheme:light;
@@ -248,7 +248,7 @@
           <div>
             <p class="eyebrow">MY FAVORITES</p>
             <h1>お気に入りボックス</h1>
-            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>2.1.0</strong></span>
+            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>2.2.2</strong></span>
           </div>
         </div>
         <p class="hero-desc">お気に入りの動画・投稿・Webサイトを、ひとつの場所に。</p>
@@ -364,7 +364,7 @@
       <p class="sheet-transfer-warn">※ リンクにはGASの接続先が含まれます。他の人に共有しないでください。</p>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
       <div id="sheetDiagOutput" class="sheet-diag-output" role="status" aria-live="polite"></div>
-      <div class="reload-note">画面上部に「v2.2.1」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
+      <div class="reload-note">画面上部に「v2.2.2」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
       <button class="btn sm" id="refreshApp" type="button">↻ 最新の画面を読み直す</button>
       <p class="sync-help">※ 同梱GAS（v2.0.0・合言葉なし）をスプレッドシートのApps Scriptに貼り付け、アクセスできるユーザーを「全員」にしてデプロイし、そのURLを上欄に入れてください。GASのURLを知っている人は登録内容を読み書きできるので、URLは他人に教えないでください。</p>
     </div>
@@ -373,7 +373,7 @@
   <div class="list-heading"><h2>保存したお気に入り</h2><span id="visibleCount">0件表示</span></div>
   <div id="list" class="list"></div>
   <div id="empty" class="empty" style="display:none"></div>
-  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.2.1</span></footer>
+  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.2.2</span></footer>
 </div>
 
 <!-- dialogs -->
@@ -1493,7 +1493,7 @@ async function drainSheetQueue(){
 $("refreshApp").addEventListener("click",()=>{
   // Query string bypasses stale browser/CDN HTML cache without clearing bookmarks.
   const u=new URL('./index.html',location.href);
-  u.searchParams.set('app_version','2.2.1');
+  u.searchParams.set('app_version','2.2.2');
   u.searchParams.set('reload',String(Date.now()));
   location.assign(u.href);
 });
@@ -1564,7 +1564,7 @@ $("sheetDiagnose").addEventListener("click",async()=>{
   const output=$("sheetDiagOutput");
   output.textContent='診断しています…（スマホの回線では30秒程度かかる場合があります）';
   const lines=[];
-  lines.push('接続診断 / v2.2.1');
+  lines.push('接続診断 / v2.2.2');
   lines.push('読み取り方式：'+sheetLastReadChannel);
   lines.push('① 接続設定：'+(sheetConfigured()?'入力済み':'未設定'));
   lines.push('② インターネット：'+(navigator.onLine?'オンライン判定':'オフライン判定'));
@@ -1813,6 +1813,14 @@ document.querySelectorAll(".jump a[data-ico]").forEach(a => {
     requestSheetSync('startup',400);
   }
 })().catch(e=>{setStatus("初期化できませんでした。Chromeで公開URLを開き直してください。",true);console.error(e);});
+})();
+</script>
+<script>
+// バージョン表示は <meta name="app-version"> を正とする。
+(function(){
+  var v=document.querySelector('meta[name="app-version"]');
+  var target=document.querySelector('#versionLabel strong');
+  if(v&&target&&v.content)target.textContent=v.content;
 })();
 </script>
 </body>
