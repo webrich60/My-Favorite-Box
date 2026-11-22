@@ -1,12 +1,11 @@
 /**
- * お気に入りボックス v1.2.3 → Googleスプレッドシート連携（スプレッドシートからの読み込みに対応）
- * スプレッドシートから拡張機能 → Apps Scriptを開いて、このコードを貼り付けます。
- * Apps Scriptの[プロジェクトの設定] → [スクリプト プロパティ] へ
- *   プロパティ: FAVBOX_ACCESS_CODE
- *   値: 自分で決めた半角英数字6～32文字
- * を保存してから setupSheet() を実行してください。
- * 合言葉の実際の値をこのソースコードに直書きしたり、GitHubに公開しないでください。
- * 6文字は簡易防御です。万全な本人認証ではなく、URLや合言葉の流出には注意が必要です。
+ * お気に入りボックス v2.0.0 → Googleスプレッドシート連携（合言葉なし・シンプル版）
+ * 1. スプレッドシートから 拡張機能 → Apps Script を開き、コード.gs の中身を全部消してこのコードを貼り付けて保存。
+ * 2. 関数「setupSheet」を選んで ▶実行（初回のみ。権限の確認が出たら許可）。
+ * 3. デプロイ → デプロイを管理 → 鉛筆 → バージョン「新バージョン」／次のユーザーとして実行「自分」／
+ *    アクセスできるユーザー「全員」 → デプロイ。（初めての場合は「新しいデプロイ」→種類「ウェブアプリ」）
+ * 4. 表示された /exec で終わるURLをアプリの「GASのウェブアプリURL」に入れて保存。
+ * 注意：合言葉がないため、このURLを知っている人は登録内容を読み書きできます。URLは他人に教えないでください。
  */
 const FAVBOX = {
   SHEET_NAME: 'お気に入り一覧',
@@ -15,7 +14,6 @@ const FAVBOX = {
 
 /** この関数を一度実行して、書き込み権限を承認します。 */
 function setupSheet() {
-  getAccessCode_(); // 設定漏れ・短すぎる合言葉はここで検出
   const sheet = getSheet_();
   Logger.log('準備できました：' + sheet.getParent().getUrl());
 }
@@ -25,7 +23,6 @@ function doPost(e) {
   let payload = {}, cacheKey = '';
   try {
     payload = JSON.parse((e && e.parameter && e.parameter.payload) || '{}');
-    if (!accessAllowed_(payload.key)) return ContentService.createTextOutput('unauthorized');
     const opId = String(payload.opId || '');
     if (!/^op[a-z0-9]{10,40}$/.test(opId)) throw new Error('操作IDが正しくありません');
     cacheKey = ackKey_(opId);
@@ -87,9 +84,7 @@ function doGet(e) {
   }
   let result;
   try {
-    if (!accessAllowed_(p.key)) {
-      result = {ok:false, error:'合言葉が一致しません。GASのスクリプト プロパティとアプリの入力を確認してください'};
-    } else if (p.mode === 'ping') {
+    if (p.mode === 'ping') {
       getSheet_(); // 実際に保存先が開けることを検証
       result = {ok:true, status:'ready'};
     } else if (p.mode === 'ack') {
@@ -97,7 +92,7 @@ function doGet(e) {
       if (!/^op[a-z0-9]{10,40}$/.test(opId)) throw new Error('操作IDが不正です');
       result = {ok:true, status:CacheService.getScriptCache().get(ackKey_(opId)) || 'pending'};
     } else if (p.mode === 'list') {
-      // 登録済みの行をアプリへ返す（読み取りのみ・合言葉必須・ページ分割）
+      // 登録済みの行をアプリへ返す（読み取りのみ・ページ分割）
       result = listRows_(Number(p.offset) || 0);
     } else if (p.mode === 'meta') {
       const title = fetchPublicTitle_(String(p.url || ''));
@@ -110,24 +105,6 @@ function doGet(e) {
   }
   return ContentService.createTextOutput(cb + '(' + JSON.stringify(result) + ');')
     .setMimeType(ContentService.MimeType.JAVASCRIPT);
-}
-
-/** Script Propertiesのみで管理する合言葉。公開ソースへ値を埋め込まない。 */
-function getAccessCode_() {
-  const key = String(PropertiesService.getScriptProperties().getProperty('FAVBOX_ACCESS_CODE') || '');
-  if (!/^[A-Za-z0-9]{6,32}$/.test(key)) throw new Error('FAVBOX_ACCESS_CODEを半角英数字6～32文字でスクリプト プロパティに設定してください');
-  return key;
-}
-function accessAllowed_(supplied) {
-  // 桁数を隠すため32文字分を比較し、長さも含めて一致したときだけ認証。
-  const expected = getAccessCode_();
-  const actual = String(supplied || '');
-  if (!/^[A-Za-z0-9]{6,32}$/.test(actual)) return false;
-  let diff = expected.length ^ actual.length;
-  for (let i = 0; i < 32; i++) {
-    diff |= (expected.charCodeAt(i) || 0) ^ (actual.charCodeAt(i) || 0);
-  }
-  return diff === 0;
 }
 
 function ackKey_(opId) {

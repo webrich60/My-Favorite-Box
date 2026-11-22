@@ -7,8 +7,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
-<meta name="app-version" content="2.0.1">
-<title>お気に入りボックス v2.0.1 | My Favorites</title>
+<meta name="app-version" content="2.1.0">
+<title>お気に入りボックス v2.1.0 | My Favorites</title>
 <style>
   :root{
     color-scheme:light;
@@ -178,6 +178,13 @@
   .title-help{font-size:12px;color:#24465e;font-weight:750;min-height:18px;margin-top:4px}
   .title-help.loading{color:#275f82}
   @media(max-width:600px){.quick-guide{padding:13px}.quick-guide strong{font-size:15px}.quick-actions{width:100%}.quick-actions .btn{flex:1}}
+  /* Accessible cross-device setup and connection diagnostics. */
+  .sheet-transfer-help{margin:9px 0 4px;font-size:13px;color:#244b63;font-weight:700;line-height:1.7}
+  .sheet-transfer-warn{margin:8px 0;font-size:12px;color:#7b3a27;font-weight:750}
+  .sheet-diag-output{margin:8px 0 4px;white-space:pre-wrap;overflow-wrap:anywhere;background:#f6f9fd;color:#17334a;border:2px solid #a6bace;border-radius:11px;padding:12px;font-size:13px;line-height:1.7;font-weight:700;min-height:85px}
+  .sheet-diag-output:empty{display:none}
+  .sheet-sync-info{margin:12px 0 14px;border:2px solid #81a6bd;border-radius:12px;padding:11px 13px;background:#f4f9ff;color:#133c57;font-size:14px;font-weight:850;line-height:1.6}
+  .sheet-sync-info.error{border-color:#c77a80;background:#fff5f4;color:#9b263b}
   /* Spreadsheet connector: preserve high-contrast visual treatment. */
   .sheet-panel{border:2px solid #839bb4}
   .sheet-panel summary{list-style:none;display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;font-weight:900;font-size:17px;color:#142f48;min-height:28px}
@@ -241,7 +248,7 @@
           <div>
             <p class="eyebrow">MY FAVORITES</p>
             <h1>お気に入りボックス</h1>
-            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>2.0.1</strong></span>
+            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>2.1.0</strong></span>
           </div>
         </div>
         <p class="hero-desc">お気に入りの動画・投稿・Webサイトを、ひとつの場所に。</p>
@@ -334,7 +341,7 @@
   <details class="panel sheet-panel" id="sheetPanel">
     <summary><span class="sync-heading">📗 Googleスプレッドシート連携</span><span id="sheetState" class="sync-state">未設定</span></summary>
     <div class="sheet-details">
-      <p>URLを登録・編集・削除すると、Googleスプレッドシートにも自動反映します。元のブラウザ保存はそのまま残ります。</p>
+      <p>【PC⇔スマホ自動同期】同じGASに接続すると、パソコンとスマホの追加・編集・削除が自動反映されます。オフラインでも端末の控えは残ります。</p>
       <div class="grid">
         <div class="full">
           <label for="sheetUrl">GASのウェブアプリURL <span class="optional">これだけ入れればOK（合言葉は不要）</span></label>
@@ -345,13 +352,19 @@
       <div class="sheet-actions">
         <button class="btn primary" type="button" id="sheetSave">連携設定を保存</button>
         <button class="btn" type="button" id="sheetTest">接続テスト</button>
-        <button class="btn primary" type="button" id="sheetLoad">スプレッドシートから読み込む</button>
+        <button class="btn" type="button" id="sheetDiagnose">🔍 スマホの接続を詳しく診断する</button>
+        <button class="btn primary" type="button" id="sheetLoad">🔄 今すぐ同期する</button>
         <button class="btn" type="button" id="sheetAll">既存のURLを一括転記</button>
         <button class="btn" type="button" id="sheetRetry">未確認分を再送</button>
         <button class="btn" type="button" id="sheetTitles">仮タイトルをまとめて取得</button>
       </div>
+      <p class="sheet-transfer-help">最初の1回だけ、パソコンで下のリンクをコピーしてスマホのChromeで開いてください。GASのURLを自動設定し、接続後はアプリ起動時・復帰時・約60秒ごとにPCとスマホのデータを同期します。</p>
+      <button class="btn" type="button" id="sheetCopySetup">📱 スマホに同期設定を送るリンクをコピー</button>
+      <div id="sheetSyncInfo" class="sheet-sync-info" role="status" aria-live="polite">GASへの接続設定後に自動同期が始まります。</div>
+      <p class="sheet-transfer-warn">※ リンクにはGASの接続先が含まれます。他の人に共有しないでください。</p>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
-      <div class="reload-note">画面上部に「v2.0.1」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
+      <div id="sheetDiagOutput" class="sheet-diag-output" role="status" aria-live="polite"></div>
+      <div class="reload-note">画面上部に「v2.1.0」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
       <button class="btn sm" id="refreshApp" type="button">↻ 最新の画面を読み直す</button>
       <p class="sync-help">※ 同梱GAS（v2.0.0・合言葉なし）をスプレッドシートのApps Scriptに貼り付け、アクセスできるユーザーを「全員」にしてデプロイし、そのURLを上欄に入れてください。GASのURLを知っている人は登録内容を読み書きできるので、URLは他人に教えないでください。</p>
     </div>
@@ -360,7 +373,7 @@
   <div class="list-heading"><h2>保存したお気に入り</h2><span id="visibleCount">0件表示</span></div>
   <div id="list" class="list"></div>
   <div id="empty" class="empty" style="display:none"></div>
-  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.0.1</span></footer>
+  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.1.0</span></footer>
 </div>
 
 <!-- dialogs -->
@@ -670,6 +683,20 @@ async function favCachePut(key,value){
   await cache.put(favCacheUrl(key),new Response(value,{headers:{'content-type':'text/plain;charset=UTF-8'}}));
 }
 async function favRead(key){
+  // 連携設定は保存先の一部が書き込み不可の端末でも、最も新しい設定を採用する。
+  // 旧版ではIndexedDBが先に読まれ、localStorageへの保存成功後に古い値が復活することがあった。
+  if(key==='favbox.sheet.config.v1'){
+    const entries=[];
+    try{const v=await favDbGet(key);if(v!==undefined&&v!==null)entries.push({v,source:'IndexedDB'});}catch(_){}
+    try{const v=localStorage.getItem(key);if(v!==null)entries.push({v,source:'localStorage'});}catch(_){}
+    try{const v=await favCacheGet(key);if(v!==null)entries.push({v,source:'CacheStorage'});}catch(_){}
+    if(!entries.length)return null;
+    const freshness=raw=>{
+      try{const c=JSON.parse(raw);return Number.isFinite(Number(c.savedAt))?Number(c.savedAt):0;}catch(_){return -1;}
+    };
+    entries.sort((a,b)=>freshness(b.v)-freshness(a.v));
+    return entries[0].v;
+  }
   const preferred=favBackendOverrides.get(key);
   if(preferred==='localStorage')try{return localStorage.getItem(key);}catch(_){/* try other */}
   if(preferred==='CacheStorage')try{const v=await favCacheGet(key);if(v!==null)return v;}catch(_){/* try other */}
@@ -768,11 +795,11 @@ async function init(){
   render();
   let timer = setTimeout(()=>{ if(mode==="loading") setStatus("保存先に接続中です…（時間がかかっています）", true); }, 10000);
   try{
-    if(!window.claude || !window.claude.use){ clearTimeout(timer); await startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）"); return; }
+    if(!window.claude || !window.claude.use){ clearTimeout(timer); await startLocal(sheetConfigured()?"✓ 端末に保存＋GASと自動同期します":"✓ このブラウザに保存されます（GAS未設定）"); return; }
     db = await window.claude.use("db");
     const user = await window.claude.use("user");
     const uid = user ? await user.id() : null;
-    if(!db || !uid){ clearTimeout(timer); await startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）"); return; }
+    if(!db || !uid){ clearTimeout(timer); await startLocal(sheetConfigured()?"✓ 端末に保存＋GASと自動同期します":"✓ このブラウザに保存されます（GAS未設定）"); return; }
     col = db.collection("data/users/" + uid);
     mode = "db";
     col.onSnapshot(snap => {
@@ -786,7 +813,7 @@ async function init(){
     });
   }catch(e){
     clearTimeout(timer);
-    await startLocal("✓ このブラウザに保存されます（他の端末とは同期されません）");
+    await startLocal(sheetConfigured()?"✓ 端末に保存＋GASと自動同期します":"✓ このブラウザに保存されます（GAS未設定）");
   }
 }
 
@@ -1169,18 +1196,47 @@ $("bkImport").addEventListener("click", async ()=>{
 /* ---------- one-way Google Sheets connector ---------- */
 const SHEET_CONFIG_KEY = "favbox.sheet.config.v1";
 const SHEET_QUEUE_KEY = "favbox.sheet.pending.v1";
-const SHEET_ACK_TIMEOUT_MS = 15000;
+// スマホ回線での初回GAS起動やGoogle側の遅延を考慮
+const SHEET_ACK_TIMEOUT_MS = 30000;
 let sheetWorking = false;
-let sheetConfig = {url:"",key:""};
+let sheetConfig = {url:"",key:"",savedAt:0};
 let sheetQueue = [];
 let sheetRetryTimer = null;
-
+const SHEET_KNOWN_IDS_KEY = 'favbox.sheet.known.v1';
+const SHEET_SYNC_INTERVAL_MS = 60000;
+let sheetKnownIds = new Set();
+let sheetSyncBusy = false;
+let sheetSyncPending = false;
+let sheetLastSyncAt = 0;
+let sheetAutoSyncTimer = null;
+let sheetReady = false;
+function sheetSyncInfo(message, error=false){
+  const el=$('sheetSyncInfo'); if(!el)return;
+  el.textContent=message;el.classList.toggle('error',!!error);
+}
+async function loadSheetKnownIds(){
+  try{
+    const raw=JSON.parse(await favRead(SHEET_KNOWN_IDS_KEY)||'[]');
+    sheetKnownIds=new Set(Array.isArray(raw)?raw.filter(x=>typeof x==='string'&&/^f[a-z0-9]{8,45}$/.test(x)):[]);
+  }catch(_){sheetKnownIds=new Set();}
+}
+async function storeSheetKnownIds(ids){
+  const previous=sheetKnownIds;
+  const next=new Set(ids);
+  try{await favWrite(SHEET_KNOWN_IDS_KEY,JSON.stringify([...next]));sheetKnownIds=next;}
+  catch(e){sheetKnownIds=previous;throw e;}
+}
+async function resetSheetKnownIds(){
+  await favErase(SHEET_KNOWN_IDS_KEY);
+  sheetKnownIds=new Set();sheetLastSyncAt=0;
+}
 async function loadSheetState(){
-  try{const cfg=JSON.parse(await favRead(SHEET_CONFIG_KEY)||"{}"); sheetConfig={url:String(cfg.url||""),key:String(cfg.key||"")};}catch(e){sheetConfig={url:"",key:""};}
+  try{const cfg=JSON.parse(await favRead(SHEET_CONFIG_KEY)||"{}"); sheetConfig={url:String(cfg.url||""),key:String(cfg.key||""),savedAt:Number(cfg.savedAt)||0};}catch(e){sheetConfig={url:"",key:"",savedAt:0};}
   try{const q=JSON.parse(await favRead(SHEET_QUEUE_KEY)||"[]"); sheetQueue=Array.isArray(q)?q.filter(x=>x&&x.opId&&x.action&&x.item):[];}catch(e){sheetQueue=[];}
   $("sheetUrl").value=sheetConfig.url;
+  await loadSheetKnownIds();
   updateSheetState();
-  if(sheetConfigured()) scheduleSheetDrain();
+  // 初期化直後の送信と受信は、端末側の一覧が読み終わってから開始します。
 }
 async function storeSheetQueue(){try{await favWrite(SHEET_QUEUE_KEY,JSON.stringify(sheetQueue));return true;}catch(e){return false;}}
 async function storeSheetConfig(){
@@ -1193,7 +1249,7 @@ function validSheetKey(key){return /^[A-Za-z0-9]{6,32}$/.test(key);}
 function sheetConfigured(){return !!sheetConfig.url&&validSheetUrl(sheetConfig.url);}
 function sheetMessage(text,isError){const e=$("sheetMessage");e.textContent=text;e.classList.toggle("error",!!isError);}
 function updateSheetState(){
-  $("sheetState").textContent=!sheetConfigured()?"未設定":sheetWorking?"送信中":sheetQueue.length?"未確認 "+sheetQueue.length+"件":"連携設定済み";
+  $("sheetState").textContent=!sheetConfigured()?"未設定":sheetWorking?"送信中":sheetSyncBusy?"同期中":sheetQueue.length?"未送信 "+sheetQueue.length+"件":sheetLastSyncAt?"同期済み":"接続済み";
 }
 function validSheetUrl(url){
   try{const u=new URL(url);return u.protocol==="https:"&&u.hostname==="script.google.com"&&/^\/macros\/s\/[A-Za-z0-9_-]+\/exec$/.test(u.pathname);}catch(e){return false;}
@@ -1322,6 +1378,7 @@ async function drainSheetQueue(){
       sheetQueue.shift();if(!await storeSheetQueue())throw new Error("送信済み記録を端末に保存できません");updateSheetState();
     }
     sheetMessage("✓ Googleスプレッドシートへの転記が完了しました（確認済み）");
+    // Once acknowledgements finish, finally{} schedules the cloud read.
   }catch(e){
     sheetMessage("未確認の送信が"+sheetQueue.length+"件あります。設定を確認し「未確認分を再送」を押してください（"+(e&&e.message||"通信エラー")+"）",true);
   }finally{sheetWorking=false;updateSheetState();}
@@ -1329,7 +1386,7 @@ async function drainSheetQueue(){
 $("refreshApp").addEventListener("click",()=>{
   // Query string bypasses stale browser/CDN HTML cache without clearing bookmarks.
   const u=new URL('./index.html',location.href);
-  u.searchParams.set('app_version','2.0.1');
+  u.searchParams.set('app_version','2.1.0');
   u.searchParams.set('reload',String(Date.now()));
   location.assign(u.href);
 });
@@ -1337,7 +1394,7 @@ $("sheetSave").addEventListener("click",async()=>{
   const url=$("sheetUrl").value.trim();
   if(!validSheetUrl(url)){const m="URLはGASのウェブアプリURL（/execで終わるもの）を入力してください。";sheetMessage(m,true);showNotice("保存できませんでした",m,true);return;}
   const previousConfig={...sheetConfig};
-  sheetConfig={url,key:""};
+  sheetConfig={url,key:"",savedAt:Date.now()};
   let savedTo='';
   try{savedTo=await storeSheetConfig();}
   catch(e){
@@ -1345,20 +1402,108 @@ $("sheetSave").addEventListener("click",async()=>{
     {const m='連携設定の保存に失敗しました：'+(e&&e.message||'原因不明')+'。GitHub Pagesの公開URLをChromeの通常タブで開いてください。';sheetMessage(m,true);showNotice('保存できませんでした',m,true);}
     return;
   }
-  updateSheetState();sheetMessage('✓ 設定を保存しました（'+savedTo+'）。次に「接続テスト」を押してください。');
-  showNotice('✓ 保存しました','GASのURLを保存しました。続けて「接続テスト」を押して確認してください。');
+  if(previousConfig.url!==url){try{await resetSheetKnownIds();}catch(e){sheetMessage('以前の同期記録を初期化できませんでした。端末の保存設定を確認してください。',true);}}
+  updateSheetState();sheetMessage('✓ 設定を保存しました（'+savedTo+'）。スプレッドシートとの同期を開始します。');
+  showNotice('✓ 保存しました','GASのURLを保存しました。パソコン・スマホで同じ接続先を使うとお気に入りが自動反映されます。');
   scheduleSheetDrain();
-  // Do not overwrite a successful save message when there are no placeholder titles.
-  if(items.some(isPlaceholderTitle)) refreshExistingTitles(8);
+  requestSheetSync('config',250);
+});
+/* ---------- safe(ish) manual transfer of personal connection to another device ---------- */
+async function acceptSheetSetupFragment(){
+  const raw=location.hash||'';
+  if(!raw.startsWith('#sheet_setup='))return;
+  // 接続先をURLの#部分で渡し、読み取った直後にアドレスから削除する。
+  try{history.replaceState(null,'',location.pathname+location.search);}catch(_){}
+  let url='';
+  try{url=decodeURIComponent(raw.slice('#sheet_setup='.length)).trim();}catch(_){}
+  $('sheetPanel').open=true;
+  if(!validSheetUrl(url)){
+    sheetMessage('接続用リンクが正しくありません。パソコンから新しいリンクを送り直してください。',true);
+    return;
+  }
+  const old={...sheetConfig};
+  sheetConfig={url,key:'',savedAt:Date.now()};
+  $('sheetUrl').value=url;
+  try{
+    await storeSheetConfig();
+    if(old.url!==url)await resetSheetKnownIds();
+    updateSheetState();
+    sheetMessage('✓ このスマホをパソコンと同じGASに接続しました。自動同期を開始します。');
+    sheetSyncInfo('📱 初回接続が完了しました。同期が完了すると最新の件数が表示されます。');
+  }catch(e){
+    sheetConfig=old;
+    $('sheetUrl').value=old.url;
+    sheetMessage('接続用リンクを保存できませんでした：'+(e&&e.message||'保存先の問題'),true);
+    sheetSyncInfo('Chromeの通常タブで開いてください。接続設定を保存できませんでした。',true);
+  }
+}
+$("sheetCopySetup").addEventListener("click",async()=>{
+  const url=$('sheetUrl').value.trim();
+  if(!validSheetUrl(url)){
+    showNotice('先にGASを設定','GASのURLを入れて「連携設定を保存」を押してから、スマホ用の接続リンクをコピーしてください。',true);
+    return;
+  }
+  const link=new URL('./',location.href);
+  link.hash='sheet_setup='+encodeURIComponent(url);
+  try{
+    if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error('このブラウザではコピーを使えません');
+    await navigator.clipboard.writeText(link.href);
+    showNotice('✓ リンクをコピーしました','このリンクを自分宛てのLINEやメールへ貼り付け、スマホのChromeで開いてください。開けば自動的に同じGASへ接続し、登録内容が同期されます。\n※ 接続用リンクを他人に送らないでください。');
+  }catch(e){
+    showNotice('コピーできませんでした','ブラウザのコピー許可をご確認ください。代わりに、上のGASのURLをコピーしてスマホの入力欄へ貼り付けることもできます。',true);
+  }
+});
+$("sheetDiagnose").addEventListener("click",async()=>{
+  const output=$("sheetDiagOutput");
+  output.textContent='診断しています…（スマホの回線では30秒程度かかる場合があります）';
+  const lines=[];
+  lines.push('接続診断 / v2.1.0');
+  lines.push('① 接続設定：'+(sheetConfigured()?'入力済み':'未設定'));
+  lines.push('② インターネット：'+(navigator.onLine?'オンライン判定':'オフライン判定'));
+  try{
+    const raw=await favRead(SHEET_CONFIG_KEY);
+    const cfg=raw?JSON.parse(raw):null;
+    lines.push('③ 端末内の設定：'+(cfg&&cfg.url?'保存あり':'保存なし'));
+    if(sheetConfigured() && (!cfg||cfg.url!==sheetConfig.url))lines.push('   ⚠ 画面のURLと保存済みのURLが違います。連携設定を保存し直してください。');
+  }catch(e){lines.push('③ 端末内の設定：読み込み失敗 ('+(e&&e.message||'不明')+')');}
+  try{
+    const store=await favStorageCheck();
+    lines.push('④ 端末内の保存動作：正常（'+store+'）');
+  }catch(e){lines.push('④ 端末内の保存動作：失敗 ('+(e&&e.message||'保存先が使えません')+')');}
+  if(!sheetConfigured()){
+    lines.push('⑤ GASとの通信：未実施（URL未設定）');
+    lines.push('対処：スマホにもGASのURLを登録し、連携設定を保存してください。');
+  }else if(!navigator.onLine){
+    lines.push('⑤ GASとの通信：未実施（オフライン）');
+    lines.push('対処：Wi-Fiまたはモバイルデータ通信をONにしてください。');
+  }else{
+    output.textContent=lines.join('\n')+'\n⑤ GASとの通信：確認中…';
+    try{
+      const result=await jsonpSheetCheck('ping');
+      if(result&&result.ok===true){
+        lines.push('⑤ GASとの通信：正常（接続できました）');
+        lines.push('次の操作：「今すぐ同期する」を押してください。');
+      }else{
+        lines.push('⑤ GASとの通信：エラー ('+(result&&result.error||'GASからの応答が不正です')+')');
+        lines.push('対処：GASのデプロイが「自分として実行」「全員に公開」の最新版か確認してください。');
+      }
+    }catch(e){
+      lines.push('⑤ GASとの通信：失敗 ('+(e&&e.message||'タイムアウト')+')');
+      lines.push('対処：Chromeの通常タブで開き、GASのURLを直接開いて権限画面が出ないか確認。Wi-Fiとモバイル回線を切り替えて再試行してください。');
+    }
+  }
+  output.textContent=lines.join('\n');
 });
 $("sheetClear").addEventListener("click",()=>openOv("clearOv"));
 $("clearYes").addEventListener("click",async()=>{
   closeOv($("clearOv"));
   try{
     await favErase(SHEET_CONFIG_KEY);
-    sheetConfig={url:"",key:""};
+    try{await resetSheetKnownIds();}catch(_){}
+    sheetConfig={url:"",key:"",savedAt:0};
     $("sheetUrl").value="";
     updateSheetState();
+    sheetSyncInfo('連携を解除しました。端末の保存済みお気に入りはそのまま残っています。');
     sheetMessage("GASのURLを削除しました。新しいURLを入れて「連携設定を保存」を押してください。");
     showNotice("✓ 削除しました","保存してあったGASのURLを削除しました。新しいURLを入れて「連携設定を保存」を押してください。");
     setTimeout(()=>{try{$("sheetUrl").focus();}catch(_){}} ,300);
@@ -1383,67 +1528,153 @@ function showConnectionHelp(e){
     m+"\n\n下のボタンでGASのURLを直接開いてください。\n・「invalid callback」とだけ出る → GASは正常です。この画面を読み直して再度お試しください。\n・Googleのログイン画面／「アクセス権限が必要」 → デプロイの「アクセスできるユーザー」を「全員」にして、新バージョンでデプロイしてください。\n・「スクリプト関数が見つかりません」やエラー → GASの貼り付けが不完全です。同梱のGASを全部貼り直して保存し、新バージョンでデプロイしてください。",
     true, sheetConfig.url);
 }
-/* ---------- load history from the spreadsheet ---------- */
+/* ---------- automatic two-way synchronization with the GAS-backed sheet ---------- */
 let sheetLoadBusy=false;
-async function loadFromSheet(quiet){
-  if(!sheetConfigured()){if(!quiet)showNotice("読み込めません","先にGASのURLを入れて「連携設定を保存」を押してください。",true);return;}
-  if(sheetLoadBusy)return;
-  sheetLoadBusy=true;
-  const btn=$("sheetLoad"); btn.disabled=true;
-  let offset=0, total=0, added=0, skipped=0;
-  const incoming=[];
-  try{
-    sheetMessage("スプレッドシートを読み込んでいます…");
-    for(let guard=0; guard<100; guard++){
-      const res=await jsonpSheetCheck("list","","",{offset});
-      if(!res||res.ok!==true){
-        const err=res&&res.error||"";
-        if(/操作が不正|合言葉/.test(err)) throw new Error("GASが古い版です。同梱の GoogleAppsScript.gs（v2.0.0）に全部貼り替えて保存し、「新バージョン」でデプロイしてください。");
-        throw new Error(err||"読み込みに失敗しました");
-      }
-      total=res.total||0;
-      (res.rows||[]).forEach(r=>incoming.push(r));
-      sheetMessage("読み込み中… "+incoming.length+" / "+total+"件");
-      if(res.next==null)break;
-      offset=res.next;
-    }
-    const ids=new Set(items.map(i=>i.id));
-    const keys=new Set(items.map(i=>i.key));
-    const fresh=[];
-    for(const r of incoming){
-      const p=parseUrl(r.url);
-      if(!p||ids.has(r.id)||keys.has(p.key)){skipped++;continue;}
-      const title=String(r.title||"");
-      const memo=String(r.memo||"");
-      const auto=autoCategory([title,memo,p.href].join(" "));
-      const category=String(r.category||"").trim()||auto;
-      const it={id:String(r.id),url:p.href,key:p.key,platform:p.platform,title,memo,category,
-        autoCat:category===auto,createdAt:Number(r.createdAt)||Date.now()};
-      ids.add(it.id); keys.add(it.key); fresh.push(it);
-    }
-    if(fresh.length){
-      if(mode==="local"){
-        const before=items.slice();
-        items=items.concat(fresh);
-        try{await lsSave();}catch(e){items=before;throw new Error("端末に保存できませんでした："+(e&&e.message||""));}
-      }else{
-        for(const it of fresh){await saveItem(it);}
-      }
-      const cats=[...new Set(fresh.map(i=>i.category))];
-      for(const c of cats){try{await registerTypedCategory(c);}catch(_){}}
-      added=fresh.length;
-    }
-    render();
-    const msg="スプレッドシート "+total+"件のうち、"+added+"件をアプリに読み込みました。"+(skipped?"（すでにある・URLが不正な "+skipped+"件はスキップ）":"");
-    sheetMessage("✓ "+msg);
-    if(!quiet||added)showNotice("✓ 読み込みました",msg);
-  }catch(e){
-    const m=(e&&e.message)||"読み込みに失敗しました";
-    if(/接続できません|応答がありません/.test(m)){ if(quiet) sheetMessage("GASに接続できません。「接続テスト」で原因を確認できます。",true); else showConnectionHelp(e); }
-    else{ sheetMessage(m,true); if(!quiet) showNotice("読み込めませんでした",m,true); }
-  }finally{sheetLoadBusy=false;btn.disabled=false;}
+function canSyncSheet(){return sheetReady&&mode!=='loading'&&sheetConfigured()&&navigator.onLine!==false;}
+function queueIds(){return new Set(sheetQueue.map(x=>x&&x.item&&x.item.id).filter(Boolean));}
+function toFavoriteFromSheet(r){
+  const p=parseUrl(r.url);
+  if(!p||!/^f[a-z0-9]{8,45}$/.test(String(r.id||'')))return null;
+  const title=String(r.title||'');
+  const memo=String(r.memo||'');
+  const auto=autoCategory([title,memo,p.href].join(' '));
+  const category=String(r.category||'').trim()||auto;
+  return {id:String(r.id),url:p.href,key:p.key,platform:p.platform,title,memo,category,
+    autoCat:category===auto,createdAt:Number(r.createdAt)||Date.now()};
 }
-$("sheetLoad").addEventListener("click",()=>loadFromSheet(false));
+function sameFav(a,b){
+  return ['id','url','key','platform','title','memo','category','autoCat','createdAt'].every(k=>a[k]===b[k]);
+}
+// Cloud rows are authoritative for already-synced IDs. Queued offline edits are protected.
+// The previous cloud-ID snapshot allows remote deletion to propagate without touching
+// bookmarks that were only ever stored locally on a device.
+async function applySheetSnapshot(remoteRows){
+  const remote=remoteRows.map(toFavoriteFromSheet).filter(Boolean);
+  const cloudIds=new Set(remote.map(r=>r.id));
+  const protectedIds=queueIds();
+  const previous=items.slice();
+  const oldById=new Map(previous.map(x=>[x.id,x]));
+  const incomingById=new Map(remote.map(x=>[x.id,x]));
+  const updated=[];
+  let added=0,changed=0,deleted=0,duplicate=0;
+  for(const local of previous){
+    if(protectedIds.has(local.id)){updated.push(local);continue;}
+    const row=incomingById.get(local.id);
+    if(row){
+      if(!sameFav(local,row)){updated.push(row);changed++;}else updated.push(local);
+      continue;
+    }
+    // This record existed on the server at a prior successful refresh, but was deleted elsewhere.
+    if(sheetKnownIds.has(local.id)){deleted++;continue;}
+    updated.push(local); // Local-only data is never discarded solely by sync.
+  }
+  const keys=new Set(updated.map(i=>i.key));
+  const ids=new Set(updated.map(i=>i.id));
+  for(const row of remote){
+    if(ids.has(row.id)||protectedIds.has(row.id))continue;
+    // Already stored locally under another ID: avoid duplicate URL and never discard local edits.
+    if(keys.has(row.key)){duplicate++;continue;}
+    updated.push(row);ids.add(row.id);keys.add(row.key);added++;
+  }
+  if(mode==='local'){
+    if(added||changed||deleted){
+      items=updated;
+      try{await lsSave();}catch(e){items=previous;throw new Error('端末内の同期結果を保存できません：'+(e&&e.message||''));}
+      render();
+    }
+  }else if(mode==='db'){
+    // The app's hosted DB mode already has live snapshots. Do not remove its documents
+    // without an explicit deletion request; mirror accepted remote updates only.
+    for(const item of updated){
+      const old=oldById.get(item.id);
+      if(!old||!sameFav(old,item))await saveItem(item);
+    }
+  }
+  await storeSheetKnownIds(cloudIds);
+  if(added||changed){
+    const cats=new Set(remote.map(r=>r.category).filter(Boolean));
+    for(const c of cats){try{await registerTypedCategory(c);}catch(_){}}
+  }
+  return {total:remote.length,added,changed,deleted,duplicate};
+}
+async function loadFromSheet(quiet=false){
+  if(!sheetConfigured()){
+    if(!quiet)showNotice('同期できません','先にGASのURLを登録してください。',true);
+    return;
+  }
+  if(!sheetReady||mode==='loading')return;
+  if(sheetLoadBusy){sheetSyncPending=true;return;}
+  if(sheetWorking){sheetSyncPending=true;return;}
+  if(navigator.onLine===false){
+    sheetSyncInfo('オフラインです。ネット接続後に自動同期します。',true);
+    return;
+  }
+  sheetLoadBusy=true;sheetSyncBusy=true;updateSheetState();
+  const btn=$('sheetLoad');btn.disabled=true;
+  let offset=0;
+  const incoming=[];
+  const startedAt=sheetConfig.url;
+  try{
+    sheetSyncInfo('🔄 スプレッドシートと同期中…');
+    for(let guard=0;guard<100;guard++){
+      const res=await jsonpSheetCheck('list','','',{offset});
+      if(!res||res.ok!==true)throw new Error(res&&res.error||'GASの読み込みに失敗しました');
+      if(!Array.isArray(res.rows))throw new Error('GASが予期しないデータを返しました');
+      incoming.push(...res.rows);
+      if(res.next==null)break;
+      if(!(res.next>offset))throw new Error('GASのページ情報が不正です');
+      offset=res.next;
+      if(guard===99)throw new Error('件数が多いため全件を取得できませんでした');
+    }
+    if(startedAt!==sheetConfig.url)throw new Error('同期中に接続先が変わりました。再同期してください。');
+    const result=await applySheetSnapshot(incoming);
+    sheetLastSyncAt=Date.now();
+    const time=new Date(sheetLastSyncAt).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+    const msg='✓ '+time+' 同期済み（クラウド '+result.total+'件／追加 '+result.added+'件／更新 '+result.changed+'件／削除 '+result.deleted+'件）';
+    sheetSyncInfo(msg);
+    sheetMessage(msg+(sheetQueue.length?'。未送信 '+sheetQueue.length+'件は送信後に再同期します。':''));
+    if(!quiet)showNotice('✓ 同期しました',msg);
+  }catch(e){
+    const msg='同期できませんでした：'+(e&&e.message||'通信エラー')+'。接続診断や「今すぐ同期する」で再試行してください。';
+    sheetSyncInfo(msg,true);sheetMessage(msg,true);
+    if(!quiet)showNotice('同期できませんでした',msg,true);
+  }finally{
+    sheetLoadBusy=false;sheetSyncBusy=false;btn.disabled=false;updateSheetState();
+    if(sheetSyncPending){sheetSyncPending=false;requestSheetSync('pending',1800);}
+  }
+}
+let sheetSyncSchedule=null;
+function requestSheetSync(reason='auto',delay=0){
+  if(!canSyncSheet())return;
+  if(sheetSyncBusy||sheetWorking){sheetSyncPending=true;return;}
+  if(sheetSyncSchedule)clearTimeout(sheetSyncSchedule);
+  sheetSyncSchedule=setTimeout(()=>{
+    sheetSyncSchedule=null;
+    if(!canSyncSheet())return;
+    // First flush outstanding local changes, then read the shared source.
+    if(sheetQueue.length){
+      sheetSyncPending=true;
+      scheduleSheetDrain();
+      return;
+    }
+    loadFromSheet(true).catch(e=>console.warn('sync:',e));
+  },delay);
+}
+function beginSheetAutoSync(){
+  if(sheetAutoSyncTimer)clearInterval(sheetAutoSyncTimer);
+  sheetAutoSyncTimer=setInterval(()=>{
+    if(document.visibilityState==='visible')requestSheetSync('interval');
+  },SHEET_SYNC_INTERVAL_MS);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='visible')requestSheetSync('visible',250);
+  });
+  window.addEventListener('focus',()=>requestSheetSync('focus',350));
+  window.addEventListener('pageshow',()=>requestSheetSync('pageshow',600));
+  window.addEventListener('online',()=>{
+    scheduleSheetDrain();requestSheetSync('online',350);
+  });
+}
+$('sheetLoad').addEventListener('click',()=>loadFromSheet(false));
 $("sheetAll").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先にGASの連携設定を保存してください。",true);return;}
   if(!items.length){sheetMessage("転記するURLがまだありません。");return;}
@@ -1464,9 +1695,14 @@ document.querySelectorAll(".jump a[data-ico]").forEach(a => {
 (async()=>{
   await loadCustomCategories();
   await loadSheetState();
+  await acceptSheetSetupFragment();
   await init();
-  // 一覧が空でGASが設定済みなら、スプレッドシートから自動で読み込む
-  if(mode==="local"&&!items.length&&sheetConfigured()) loadFromSheet(true);
+  sheetReady=true;
+  beginSheetAutoSync();
+  if(sheetConfigured()){
+    if(sheetQueue.length)scheduleSheetDrain();
+    requestSheetSync('startup',400);
+  }
 })().catch(e=>{setStatus("初期化できませんでした。Chromeで公開URLを開き直してください。",true);console.error(e);});
 })();
 </script>
