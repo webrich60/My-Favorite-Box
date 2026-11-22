@@ -7,8 +7,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
-<meta name="app-version" content="1.2.1">
-<title>お気に入りボックス v1.2.1 | My Favorites</title>
+<meta name="app-version" content="1.2.2">
+<title>お気に入りボックス v1.2.2 | My Favorites</title>
 <style>
   :root{
     color-scheme:light;
@@ -138,6 +138,13 @@
   .dlg.alert h3{color:var(--warn)}
   .dlg .box{border:1px solid #d5e0eb;border-radius:12px;padding:13px;margin:12px 0;background:#f6f9fc;overflow-wrap:anywhere}
   .dlg .row{justify-content:flex-end;margin-top:15px}
+  .notice-dlg{max-width:420px;text-align:center;border:3px solid #0a6b2c}
+  .notice-dlg h3{color:#0a6b2c;font-size:22px}
+  .notice-dlg.err{border-color:#b00020}
+  .notice-dlg.err h3{color:#b00020}
+  .notice-body{font-weight:700;color:#111;line-height:1.7;overflow-wrap:anywhere}
+  .notice-dlg .row{justify-content:center}
+  .notice-dlg .btn{min-width:140px}
   .toast{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#143957;color:#fff;font-weight:760;padding:11px 18px;border-radius:13px;box-shadow:0 10px 22px rgba(9,28,46,.24);display:none;z-index:60;min-width:160px;text-align:center;max-width:calc(100vw - 30px)}
   .toast.show{display:block}
   .footer{margin-top:28px;text-align:center;color:#4c647a;font-size:12px;font-weight:700}
@@ -231,7 +238,7 @@
           <div>
             <p class="eyebrow">MY FAVORITES</p>
             <h1>お気に入りボックス</h1>
-            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>1.2.1</strong></span>
+            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>1.2.2</strong></span>
           </div>
         </div>
         <p class="hero-desc">お気に入りの動画・投稿・Webサイトを、ひとつの場所に。</p>
@@ -347,7 +354,7 @@
         <button class="btn" type="button" id="sheetTitles">仮タイトルをまとめて取得</button>
       </div>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
-      <div class="reload-note">画面上部に「v1.2.1」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
+      <div class="reload-note">画面上部に「v1.2.2」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
       <button class="btn sm" id="refreshApp" type="button">↻ 最新の画面を読み直す</button>
       <p class="sync-help">※ 同梱GASの「スクリプト プロパティ」に合言葉を設定し、同じ文字を上欄へ入力してください。毎回の入力は不要です。旧GASは最新版へ更新してください。送信失敗分は再送できます。なお6文字は簡易保護のため、重要情報の保存や第三者へのGAS URLの公開は避けてください。</p>
     </div>
@@ -356,10 +363,18 @@
   <div class="list-heading"><h2>保存したお気に入り</h2><span id="visibleCount">0件表示</span></div>
   <div id="list" class="list"></div>
   <div id="empty" class="empty" style="display:none"></div>
-  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v1.2.1</span></footer>
+  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v1.2.2</span></footer>
 </div>
 
 <!-- dialogs -->
+<div class="ov" id="noticeOv" role="alertdialog" aria-modal="true" aria-labelledby="noticeTitle">
+  <div class="dlg notice-dlg" id="noticeDlg">
+    <h3 id="noticeTitle">✓ 保存しました</h3>
+    <div id="noticeBody" class="notice-body"></div>
+    <div class="row"><button class="btn primary" type="button" id="noticeOk" data-close>OK</button></div>
+  </div>
+</div>
+
 <div class="ov" id="dupOv" role="dialog" aria-modal="true">
   <div class="dlg alert">
     <h3>⚠ すでに登録されています</h3>
@@ -757,6 +772,13 @@ function fmtDate(ms){ const d = new Date(ms); return Number.isNaN(d.getTime()) ?
 function toast(t){ const el=$("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("show"),2200); }
 function findDup(key, exceptId){ return items.find(i => i.key === key && i.id !== exceptId); }
 function openOv(id){ $(id).classList.add("show"); }
+function showNotice(title, body, isError){
+  $("noticeTitle").textContent = title;
+  $("noticeBody").textContent = body || "";
+  $("noticeDlg").classList.toggle("err", !!isError);
+  openOv("noticeOv");
+  setTimeout(()=>{ try{ $("noticeOk").focus(); }catch(_){} }, 30);
+}
 function closeOv(el){ el.classList.remove("show"); }
 document.querySelectorAll(".ov").forEach(ov => {
   ov.addEventListener("click", e => { if(e.target === ov || e.target.hasAttribute("data-close")) closeOv(ov); });
@@ -1072,8 +1094,8 @@ $("eSave").addEventListener("click", async ()=>{
   upd.autoCat = upd.category === auto;
   const previous=items.find(i=>i.id===upd.id);
   if(mode==="local"){ const k=items.findIndex(i=>i.id===upd.id); items[k]=upd; }
-  try{ await saveItem(upd); await registerTypedCategory(upd.category); closeOv($("editOv")); toast("保存しました"); if(mode==="local") render(); await queueSheetChange("upsert", upd); }
-  catch(err){if(mode==="local"&&previous){items=items.map(i=>i.id===upd.id?previous:i);render();} toast("保存できませんでした"); }
+  try{ await saveItem(upd); await registerTypedCategory(upd.category); closeOv($("editOv")); showNotice("✓ 保存しました", "「"+(upd.title||"（タイトルなし）")+"」の変更を保存しました。"); if(mode==="local") render(); await queueSheetChange("upsert", upd); }
+  catch(err){if(mode==="local"&&previous){items=items.map(i=>i.id===upd.id?previous:i);render();} showNotice("保存できませんでした", "通信状態を確認して、もう一度「保存」を押してください。", true); }
 });
 $("delYes").addEventListener("click", async ()=>{
   if(!deleting) return;
@@ -1280,7 +1302,7 @@ async function drainSheetQueue(){
 $("refreshApp").addEventListener("click",()=>{
   // Query string bypasses stale browser/CDN HTML cache without clearing bookmarks.
   const u=new URL('./index.html',location.href);
-  u.searchParams.set('app_version','1.2.1');
+  u.searchParams.set('app_version','1.2.2');
   u.searchParams.set('reload',String(Date.now()));
   location.assign(u.href);
 });
@@ -1299,18 +1321,19 @@ $("sheetKeyToggle").addEventListener("click",()=>{
 $("sheetSave").addEventListener("click",async()=>{
   const url=$("sheetUrl").value.trim();
   const key=$("sheetKey").value.trim();
-  if(!validSheetUrl(url)){sheetMessage("URLはGASのウェブアプリURL（/execで終わるもの）を入力してください。",true);return;}
-  if(!validSheetKey(key)){sheetMessage("合言葉は半角英数字6～32文字で設定してください。",true);return;}
+  if(!validSheetUrl(url)){const m="URLはGASのウェブアプリURL（/execで終わるもの）を入力してください。";sheetMessage(m,true);showNotice("保存できませんでした",m,true);return;}
+  if(!validSheetKey(key)){const m="合言葉は半角英数字6～32文字で設定してください。（全角になっていないか確認してください）";sheetMessage(m,true);showNotice("保存できませんでした",m,true);return;}
   const previousConfig={...sheetConfig};
   sheetConfig={url,key};
   let savedTo='';
   try{savedTo=await storeSheetConfig();}
   catch(e){
     sheetConfig=previousConfig;updateSheetState();
-    sheetMessage('連携設定の保存に失敗しました：'+(e&&e.message||'原因不明')+'。GitHub Pagesの公開URLをChromeの通常タブで開いてください。',true);
+    {const m='連携設定の保存に失敗しました：'+(e&&e.message||'原因不明')+'。GitHub Pagesの公開URLをChromeの通常タブで開いてください。';sheetMessage(m,true);showNotice('保存できませんでした',m,true);}
     return;
   }
   updateSheetState();sheetMessage('✓ 設定を保存しました（'+savedTo+'）。次に「接続テスト」を押してください。');
+  showNotice('✓ 保存しました','連携設定（GASのURLと合言葉）を保存しました。続けて「接続テスト」を押して確認してください。');
   scheduleSheetDrain();
   // Do not overwrite a successful save message when there are no placeholder titles.
   if(items.some(isPlaceholderTitle)) refreshExistingTitles(8);
