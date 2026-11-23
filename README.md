@@ -1,7 +1,3 @@
-お気に入りボックス v2.2.1（GitHub Pages＋GASのみ）
+# お気に入りボックス v2.2.3
 
-最初に START-HERE.md をお読みください。
-GitHubへ上書きするファイル: index.html / sw.js
-GASへ貼り付けて既存のウェブアプリを新バージョンで再デプロイするファイル: GAS-SETUP/GoogleAppsScript.gs
-
-Cloudflareの設定は一切不要です。
+PCにだけ残る既存のお気に入りを初回同期時に自動転記し、スマホへ反映します。同期状況とクラウド件数をアプリ画面と接続診断に表示します。初めに `START-HERE.md` をご覧ください。

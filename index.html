@@ -7,8 +7,8 @@
 <link rel="manifest" href="./manifest.webmanifest">
 <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
 <meta name="description" content="お気に入りの動画や投稿、Webサイトをひとつにまとめて保存する個人用リンクボックス。">
-<meta name="app-version" content="2.2.2">
-<title>お気に入りボックス v2.2.2 | My Favorites</title>
+<meta name="app-version" content="2.2.3">
+<title>お気に入りボックス v2.2.3 | My Favorites</title>
 <style>
   :root{
     color-scheme:light;
@@ -52,6 +52,11 @@
   .hero-stat strong{font-size:23px;color:#fff;line-height:1.15;font-weight:850;font-variant-numeric:tabular-nums}
   .hero-stat+.hero-stat{padding-left:18px;border-left:1px solid rgba(255,255,255,.24)}
   .hero-note{margin-left:auto;color:#c3dce9;font-size:12px}
+  .cloud-status{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;background:#fff;border:2px solid #9db5c9;border-radius:16px;padding:15px 17px;margin:-5px 0 22px;color:#153a57;font-size:15px;font-weight:850;line-height:1.6}
+  .cloud-status.error{border-color:#c46775;background:#fff6f6;color:#8c2337}
+  .cloud-status .btn{font-size:14px;flex:none}
+  @media(max-width:600px){.cloud-status .btn{width:100%;}}
+
   .ico{display:inline-flex;width:20px;height:20px;flex:none;align-items:center;justify-content:center}
   .ico svg{display:block;width:100%;height:100%}
   .badge{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:11px;color:#fff;flex:none}
@@ -248,7 +253,7 @@
           <div>
             <p class="eyebrow">MY FAVORITES</p>
             <h1>お気に入りボックス</h1>
-            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>2.2.2</strong></span>
+            <span class="version-label" id="versionLabel" aria-label="アプリのバージョン">最新版 v<strong>2.2.3</strong></span>
           </div>
         </div>
         <p class="hero-desc">お気に入りの動画・投稿・Webサイトを、ひとつの場所に。</p>
@@ -267,6 +272,10 @@
       <span class="hero-note">お気に入りを、すっきり整理。</span>
     </div>
   </header>
+  <div class="cloud-status" id="topSyncStatus" role="status" aria-live="polite">
+    <span id="topSyncText">GASとの同期状況を確認しています…</span>
+    <button class="btn primary" type="button" id="topSyncNow">🔄 今すぐ同期</button>
+  </div>
 
   <div class="quick-guide" aria-label="簡単登録の案内">
     <div><strong>📲 スマホの「共有」から、そのまま保存</strong><p>AndroidのChromeでアプリをインストールすると、YouTubeやWebサイトの共有先として選べます。</p></div>
@@ -341,7 +350,7 @@
   <details class="panel sheet-panel" id="sheetPanel">
     <summary><span class="sync-heading">📗 Googleスプレッドシート連携</span><span id="sheetState" class="sync-state">未設定</span></summary>
     <div class="sheet-details">
-      <p>【PC⇔スマホ自動同期】同じGASに接続すると、パソコンとスマホの追加・編集・削除が自動反映されます。オフラインでも端末の控えは残ります。</p>
+      <p>【PC⇔スマホ自動同期】既存のお気に入りをスプレッドシートへ初回自動転記します。スマホには同じGASからデータを読み込みます。通信に失敗したときは、上部の同期状況と下の診断結果をご確認ください。</p>
       <div class="grid">
         <div class="full">
           <label for="sheetUrl">GASのウェブアプリURL <span class="optional">これだけ入れればOK（合言葉は不要）</span></label>
@@ -358,13 +367,13 @@
         <button class="btn" type="button" id="sheetRetry">未確認分を再送</button>
         <button class="btn" type="button" id="sheetTitles">仮タイトルをまとめて取得</button>
       </div>
-      <p class="sheet-transfer-help">最初の1回だけ、パソコンで下のリンクをコピーしてスマホのChromeで開いてください。GASのURLを自動設定し、接続後はアプリ起動時・復帰時・約60秒ごとにPCとスマホのデータを同期します。</p>
+      <p class="sheet-transfer-help">最初の1回だけ、パソコンで下のリンクをコピーし、スマホのChromeで開いてください。リンクで送るのはGASの接続先だけです。登録データはパソコンからスプレッドシートへ転記した後、スマホがそこから読み込みます。初回の自動転記には数分かかる場合があります。</p>
       <button class="btn" type="button" id="sheetCopySetup">📱 スマホに同期設定を送るリンクをコピー</button>
       <div id="sheetSyncInfo" class="sheet-sync-info" role="status" aria-live="polite">GASへの接続設定後に自動同期が始まります。</div>
       <p class="sheet-transfer-warn">※ リンクにはGASの接続先が含まれます。他の人に共有しないでください。</p>
       <div id="sheetMessage" class="sheet-message" role="status" aria-live="polite"></div>
       <div id="sheetDiagOutput" class="sheet-diag-output" role="status" aria-live="polite"></div>
-      <div class="reload-note">画面上部に「v2.2.2」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
+      <div class="reload-note">画面上部に「v2.2.3」が見えない場合、古い画面が残っています。保存データを消さずに更新できます。</div>
       <button class="btn sm" id="refreshApp" type="button">↻ 最新の画面を読み直す</button>
       <p class="sync-help">※ 同梱GAS（v2.0.0・合言葉なし）をスプレッドシートのApps Scriptに貼り付け、アクセスできるユーザーを「全員」にしてデプロイし、そのURLを上欄に入れてください。GASのURLを知っている人は登録内容を読み書きできるので、URLは他人に教えないでください。</p>
     </div>
@@ -373,7 +382,7 @@
   <div class="list-heading"><h2>保存したお気に入り</h2><span id="visibleCount">0件表示</span></div>
   <div id="list" class="list"></div>
   <div id="empty" class="empty" style="display:none"></div>
-  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.2.2</span></footer>
+  <footer class="footer">MY FAVORITES · 個人用のリンクコレクション <span class="version-footer">| v2.2.3</span></footer>
 </div>
 
 <!-- dialogs -->
@@ -1213,9 +1222,14 @@ let sheetSyncPending = false;
 let sheetLastSyncAt = 0;
 let sheetAutoSyncTimer = null;
 let sheetReady = false;
+let sheetLastCloudTotal = null;
 function sheetSyncInfo(message, error=false){
-  const el=$('sheetSyncInfo'); if(!el)return;
-  el.textContent=message;el.classList.toggle('error',!!error);
+  const el=$('sheetSyncInfo');
+  if(el){el.textContent=message;el.classList.toggle('error',!!error);}
+  const top=$('topSyncText');
+  const panel=$('topSyncStatus');
+  if(top)top.textContent=message;
+  if(panel)panel.classList.toggle('error',!!error);
 }
 async function loadSheetKnownIds(){
   try{
@@ -1239,6 +1253,7 @@ async function loadSheetState(){
   $("sheetUrl").value=sheetConfig.url;
   await loadSheetKnownIds();
   updateSheetState();
+  sheetSyncInfo(sheetConfigured()?'GASの接続先は登録済み。スプレッドシートへの接続確認中です。':'GAS未設定。この端末の登録内容はまだ共有されていません。');
   // 初期化直後の送信と受信は、端末側の一覧が読み終わってから開始します。
 }
 async function storeSheetQueue(){try{await favWrite(SHEET_QUEUE_KEY,JSON.stringify(sheetQueue));return true;}catch(e){return false;}}
@@ -1485,15 +1500,19 @@ async function drainSheetQueue(){
       sheetQueue.shift();if(!await storeSheetQueue())throw new Error("送信済み記録を端末に保存できません");updateSheetState();
     }
     sheetMessage("✓ Googleスプレッドシートへの転記が完了しました（確認済み）");
-    // Once acknowledgements finish, finally{} schedules the cloud read.
+    sheetSyncInfo('✓ パソコンからスプレッドシートに送信できました。クラウドの内容を再取得します。');
   }catch(e){
     sheetMessage("未確認の送信が"+sheetQueue.length+"件あります。設定を確認し「未確認分を再送」を押してください（"+(e&&e.message||"通信エラー")+"）",true);
-  }finally{sheetWorking=false;updateSheetState();}
+  }finally{
+    sheetWorking=false;updateSheetState();
+    // v2.2.2ではコメントだけで実際の読み直しが実行されなかった。
+    if(!sheetQueue.length)requestSheetSync('sent',550);
+  }
 }
 $("refreshApp").addEventListener("click",()=>{
   // Query string bypasses stale browser/CDN HTML cache without clearing bookmarks.
   const u=new URL('./index.html',location.href);
-  u.searchParams.set('app_version','2.2.2');
+  u.searchParams.set('app_version','2.2.3');
   u.searchParams.set('reload',String(Date.now()));
   location.assign(u.href);
 });
@@ -1546,8 +1565,8 @@ async function acceptSheetSetupFragment(){
 }
 $("sheetCopySetup").addEventListener("click",async()=>{
   const url=$('sheetUrl').value.trim();
-  if(!validSheetUrl(url)){
-    showNotice('先にGASを設定','GASのURLを入れて「連携設定を保存」を押してから、スマホ用の接続リンクをコピーしてください。',true);
+  if(!validSheetUrl(url)||!sheetConfigured()||url!==sheetConfig.url){
+    showNotice('先にGASを保存','パソコンで「連携設定を保存」を押し、接続先が登録されたことを確認してからスマホ用リンクをコピーしてください。',true);
     return;
   }
   const link=new URL('./',location.href);
@@ -1555,7 +1574,8 @@ $("sheetCopySetup").addEventListener("click",async()=>{
   try{
     if(!navigator.clipboard||!navigator.clipboard.writeText)throw new Error('このブラウザではコピーを使えません');
     await navigator.clipboard.writeText(link.href);
-    showNotice('✓ リンクをコピーしました','このリンクを自分宛てのLINEやメールへ貼り付け、スマホのChromeで開いてください。開けば自動的に同じGASへ接続し、登録内容が同期されます。\n※ 接続用リンクを他人に送らないでください。');
+    showNotice('✓ リンクをコピーしました','このリンクを自分宛てのLINEやメールへ貼り付け、スマホのChromeで開いてください。接続先が自動設定されます。\nパソコン側では既存データのクラウド転記が済んでいるか、画面上部の同期表示をご確認ください。\n※ 接続用リンクを他人に送らないでください。');
+    if(!sheetLastSyncAt)requestSheetSync('share',200);
   }catch(e){
     showNotice('コピーできませんでした','ブラウザのコピー許可をご確認ください。代わりに、上のGASのURLをコピーしてスマホの入力欄へ貼り付けることもできます。',true);
   }
@@ -1564,10 +1584,11 @@ $("sheetDiagnose").addEventListener("click",async()=>{
   const output=$("sheetDiagOutput");
   output.textContent='診断しています…（スマホの回線では30秒程度かかる場合があります）';
   const lines=[];
-  lines.push('接続診断 / v2.2.2');
+  lines.push('接続診断 / v2.2.3');
   lines.push('読み取り方式：'+sheetLastReadChannel);
   lines.push('① 接続設定：'+(sheetConfigured()?'入力済み':'未設定'));
   lines.push('② インターネット：'+(navigator.onLine?'オンライン判定':'オフライン判定'));
+  lines.push('   この端末のお気に入り：'+items.length+'件');
   try{
     const raw=await favRead(SHEET_CONFIG_KEY);
     const cfg=raw?JSON.parse(raw):null;
@@ -1591,7 +1612,16 @@ $("sheetDiagnose").addEventListener("click",async()=>{
       if(result&&result.ok===true){
         lines.push('⑤ GASとの通信：正常（接続できました）');
         lines.push('   使用方式：'+sheetLastReadChannel);
-        lines.push('次の操作：「今すぐ同期する」を押してください。');
+        try{
+          const cloud=await sheetApiCheck('list','','',{offset:0});
+          if(!cloud||cloud.ok!==true||!Array.isArray(cloud.rows))throw new Error(cloud&&cloud.error||'一覧の取得に失敗しました');
+          const valid=cloud.rows.map(toFavoriteFromSheet).filter(Boolean).length;
+          lines.push('⑥ スプレッドシート：'+(Number(cloud.total)||0)+'行／先頭ページで読込可能 '+valid+'件');
+          if(Number(cloud.total)===0&&items.length)lines.push('対処：パソコンに保存した登録をスプレッドシートへ送る必要があります。PCで同期を実行するか、既存URLを一括転記してください。');
+          else if(Number(cloud.total)>0&&valid===0)lines.push('⚠ IDやURLが正しい形式でない行があります。GASの最新版を確認してください。');
+          else lines.push('次の操作：「今すぐ同期する」を押してください。');
+        }catch(error){lines.push('⑥ スプレッドシートの一覧取得：失敗 ('+(error&&error.message||'不明')+')');}
+
       }else{
         lines.push('⑤ GASとの通信：エラー ('+(result&&result.error||'GASからの応答が不正です')+')');
         lines.push('対処：GASのデプロイが「自分として実行」「全員に公開」の最新版か確認してください。');
@@ -1706,6 +1736,37 @@ async function applySheetSnapshot(remoteRows){
   }
   return {total:remote.length,added,changed,deleted,duplicate};
 }
+/**
+ * 過去の版でPCにだけ保存されていたお気に入りを初回の読み取り成功後に自動転記。
+ * かつてクラウドに存在したIDは復活させない（他端末で削除された可能性がある）。
+ * 同じURLがクラウドにある場合は二重登録しない。
+ * 送信前に永続キューに控えるので通信失敗時も端末内の原本は保護される。
+ */
+async function queueLegacyLocalFavorites(remoteRows, previouslyKnownIds){
+  if(mode!=='local'||!items.length||!sheetConfigured())return 0;
+  const remoteIds=new Set(remoteRows.map(r=>String(r.id||'')));
+  const remoteKeys=new Set(remoteRows.map(r=>{const p=parseUrl(String(r.url||''));return p?p.key:'';}).filter(Boolean));
+  const pending=queueIds();
+  const staged=[];
+  for(const item of items){
+    const id=String(item&&item.id||'');
+    if(!/^f[a-z0-9]{8,45}$/.test(id)||!parseUrl(String(item.url||'')))continue;
+    if(remoteIds.has(id)||remoteKeys.has(item.key)||previouslyKnownIds.has(id)||pending.has(id))continue;
+    staged.push({opId:sheetOpId(),action:'upsert',item:JSON.parse(JSON.stringify(item))});
+    pending.add(id);
+  }
+  if(!staged.length)return 0;
+  const before=sheetQueue.length;
+  sheetQueue.push(...staged);
+  if(!await storeSheetQueue()){
+    sheetQueue.length=before;
+    throw new Error('既存のお気に入りを送信待ちに保存できません。バックアップを取り、端末の保存設定を確認してください');
+  }
+  updateSheetState();
+  scheduleSheetDrain(400);
+  return staged.length;
+}
+
 async function loadFromSheet(quiet=false){
   if(!sheetConfigured()){
     if(!quiet)showNotice('同期できません','先にGASのURLを登録してください。',true);
@@ -1723,6 +1784,7 @@ async function loadFromSheet(quiet=false){
   let offset=0;
   const incoming=[];
   const startedAt=sheetConfig.url;
+  const knownBefore=new Set(sheetKnownIds);
   try{
     sheetSyncInfo('🔄 スプレッドシートと同期中…');
     for(let guard=0;guard<100;guard++){
@@ -1737,14 +1799,16 @@ async function loadFromSheet(quiet=false){
     }
     if(startedAt!==sheetConfig.url)throw new Error('同期中に接続先が変わりました。再同期してください。');
     const result=await applySheetSnapshot(incoming);
+    sheetLastCloudTotal=result.total;
+    const migrated=await queueLegacyLocalFavorites(incoming,knownBefore);
     sheetLastSyncAt=Date.now();
     const time=new Date(sheetLastSyncAt).toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-    const msg='✓ '+time+' 同期済み（クラウド '+result.total+'件／追加 '+result.added+'件／更新 '+result.changed+'件／削除 '+result.deleted+'件）';
+    const msg='✓ '+time+' 読み取り成功：クラウド '+result.total+'件／この端末 '+items.length+'件'+(migrated?'。既存の'+migrated+'件を自動送信中':'')+(sheetQueue.length&&!migrated?'（送信待ち '+sheetQueue.length+'件）':'');
     sheetSyncInfo(msg);
-    sheetMessage(msg+(sheetQueue.length?'。未送信 '+sheetQueue.length+'件は送信後に再同期します。':''));
-    if(!quiet)showNotice('✓ 同期しました',msg);
+    sheetMessage(msg+(migrated?'。スマホにも反映するまで少し時間をおいて再同期してください。':''));
+    if(!quiet)showNotice('同期状況',msg);
   }catch(e){
-    const msg='同期できませんでした：'+(e&&e.message||'通信エラー')+'。接続診断や「今すぐ同期する」で再試行してください。';
+    const msg='同期できませんでした：'+(e&&e.message||'通信エラー')+'。登録0件でも空とは限りません。「Googleスプレッドシート連携」で接続診断してください。';
     sheetSyncInfo(msg,true);sheetMessage(msg,true);
     if(!quiet)showNotice('同期できませんでした',msg,true);
   }finally{
@@ -1784,6 +1848,15 @@ function beginSheetAutoSync(){
   });
 }
 $('sheetLoad').addEventListener('click',()=>loadFromSheet(false));
+$('topSyncNow').addEventListener('click',async()=>{
+  if(!sheetConfigured()){
+    $('sheetPanel').open=true;
+    $('sheetPanel').scrollIntoView({behavior:'smooth',block:'start'});
+    sheetSyncInfo('GAS未設定です。「Googleスプレッドシート連携」で接続先を登録してください。',true);
+    return;
+  }
+  await loadFromSheet(false);
+});
 $("sheetAll").addEventListener("click",async()=>{
   if(!sheetConfigured()){sheetMessage("先にGASの連携設定を保存してください。",true);return;}
   if(!items.length){sheetMessage("転記するURLがまだありません。");return;}
@@ -1809,6 +1882,7 @@ document.querySelectorAll(".jump a[data-ico]").forEach(a => {
   sheetReady=true;
   beginSheetAutoSync();
   if(sheetConfigured()){
+    sheetSyncInfo('🔄 GASを確認中… パソコンと同じ接続先か調べています。');
     if(sheetQueue.length)scheduleSheetDrain();
     requestSheetSync('startup',400);
   }
